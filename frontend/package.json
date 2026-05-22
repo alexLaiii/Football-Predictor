@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy": "opennextjs-cloudflare build",
+    "deploy": "next build && opennextjs-cloudflare build",
     "start": "next start",
     "lint": "next lint"
   },
