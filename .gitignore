@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.env
+.env.*
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/.env
+frontend/.env.*
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+.claude/
+CLAUDE.md

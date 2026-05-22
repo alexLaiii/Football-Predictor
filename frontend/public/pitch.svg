@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 680">
+  <g stroke="#4a5588" stroke-width="3" fill="none" opacity="0.18">
+    <!-- Pitch outline -->
+    <rect x="10" y="10" width="1030" height="660"/>
+    <!-- Halfway line -->
+    <line x1="525" y1="10" x2="525" y2="670"/>
+    <!-- Centre circle -->
+    <circle cx="525" cy="340" r="91.5"/>
+    <!-- Centre spot -->
+    <circle cx="525" cy="340" r="5" fill="#4a5588"/>
+
+    <!-- Left penalty area -->
+    <rect x="10" y="144" width="165" height="392"/>
+    <!-- Left goal area -->
+    <rect x="10" y="251" width="55" height="178"/>
+    <!-- Left penalty spot -->
+    <circle cx="120" cy="340" r="5" fill="#4a5588"/>
+    <!-- Left penalty arc (D) -->
+    <path d="M 175 267 A 91.5 91.5 0 0 1 175 413"/>
+
+    <!-- Right penalty area -->
+    <rect x="875" y="144" width="165" height="392"/>
+    <!-- Right goal area -->
+    <rect x="985" y="251" width="55" height="178"/>
+    <!-- Right penalty spot -->
+    <circle cx="930" cy="340" r="5" fill="#4a5588"/>
+    <!-- Right penalty arc (D) -->
+    <path d="M 875 267 A 91.5 91.5 0 0 0 875 413"/>
+
+    <!-- Corner arcs -->
+    <path d="M 20 10 A 10 10 0 0 1 10 20"/>
+    <path d="M 1030 10 A 10 10 0 0 0 1040 20"/>
+    <path d="M 10 660 A 10 10 0 0 1 20 670"/>
+    <path d="M 1040 660 A 10 10 0 0 0 1030 670"/>
+  </g>
+</svg>
