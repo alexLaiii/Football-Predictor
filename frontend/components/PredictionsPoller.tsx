@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PredictionsPoller() {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const startRef = useRef(Date.now());
 
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function PredictionsPoller() {
         clearInterval(id);
         return;
       }
-      router.refresh();
+      startTransition(() => router.refresh());
     }, 2000);
     return () => clearInterval(id);
   }, [router]);
