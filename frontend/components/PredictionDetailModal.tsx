@@ -18,26 +18,26 @@ export default function PredictionDetailModal({ prediction: p, fixture: f, onClo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="relative bg-wc-navy border border-wc-border rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl"
+        className="relative bg-white border border-wc-border rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-wc-border shrink-0">
           <div>
-            <div className="text-white font-semibold">
+            <div className="text-wc-ink font-semibold">
               {f ? `${f.home_team} vs ${f.away_team}` : `Fixture #${p.fixture_id}`}
             </div>
             <div className="text-xs text-wc-muted mt-0.5 capitalize">
-              {p.model_name} · Bet <span className="text-white">{p.bet_on}</span>
+              {p.model_name} · Bet <span className="text-wc-ink">{p.bet_on}</span>
               {" @ "}<span className="text-wc-gold">{p.odds.toFixed(2)}</span>
               {" · Stake "}<span className="text-wc-gold">${p.stake.toFixed(2)}</span>
             </div>
           </div>
-          <button onClick={onClose} className="text-wc-muted hover:text-white transition-colors text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-wc-muted hover:text-wc-ink transition-colors text-lg leading-none">✕</button>
         </div>
 
         {/* Body */}
@@ -52,7 +52,7 @@ export default function PredictionDetailModal({ prediction: p, fixture: f, onClo
           {p.prompt_snapshot ? (
             <div>
               <div className="text-xs text-wc-gold font-semibold uppercase tracking-widest mb-2">Prompt used</div>
-              <pre className="text-xs text-wc-muted whitespace-pre-wrap leading-relaxed border border-wc-border rounded-lg p-3 bg-black/20">
+              <pre className="text-xs text-wc-muted whitespace-pre-wrap leading-relaxed border border-wc-border rounded-lg p-3 bg-wc-subtle">
                 {p.prompt_snapshot}
               </pre>
             </div>

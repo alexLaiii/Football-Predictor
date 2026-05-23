@@ -14,7 +14,7 @@ export default function TeamLogo({ src, alt, className = "w-8 h-8" }: Props) {
   if (!src || failed) {
     return (
       <div
-        className={`${className} rounded-full bg-wc-card border border-wc-border flex items-center justify-center shrink-0`}
+        className={`${className} rounded-full bg-wc-subtle border border-wc-border flex items-center justify-center shrink-0`}
         aria-label={alt}
       >
         <span className="text-xs font-bold text-wc-muted leading-none">

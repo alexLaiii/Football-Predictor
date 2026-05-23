@@ -96,35 +96,35 @@ export default function MatchesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs text-wc-gold uppercase tracking-widest mb-1">Top 5 Euro League & FIFA World Cup 2026</p>
-          <h1 className="text-3xl font-bold text-white">Matches</h1>
-          <p className="mt-1 text-wc-muted">Click a match to submit Sir Kim&apos;s prediction and AI will predict the same match.</p>
+          <h1 className="text-3xl font-bold text-wc-ink tracking-tight">Matches</h1>
+          <p className="mt-2 text-wc-muted">Click a match to submit Sir Kim&apos;s prediction and AI will predict the same match. (Ideally, make predictions at least <span className="font-semibold text-wc-ink">30 minutes</span> before kick-off, when the Starting XI is released.)</p>
         </div>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="rounded-lg bg-wc-red px-4 py-2 text-sm font-medium text-white hover:bg-[#a50d25] disabled:opacity-50 transition-colors"
+          className="rounded-lg bg-wc-ink px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
         >
           {syncing ? "Syncing…" : "Sync Fixtures"}
         </button>
       </div>
 
       {fixtures.length === 0 ? (
-        <div className="rounded-xl border border-wc-border bg-wc-card p-12 text-center">
+        <div className="rounded-xl border border-wc-border bg-white p-12 text-center shadow-card">
           <p className="text-wc-muted">No fixtures in database.</p>
-          <p className="mt-1 text-sm text-wc-muted/60">Click &ldquo;Sync Fixtures&rdquo; to pull upcoming matches.</p>
+          <p className="mt-1 text-sm text-wc-muted/70">Click &ldquo;Sync Fixtures&rdquo; to pull upcoming matches.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {orderedLeagues.map((league) => {
             const isOpen = !collapsed[league];
             return (
-              <div key={league} className="rounded-xl border border-wc-border overflow-hidden">
+              <div key={league} className="rounded-xl border border-wc-border overflow-hidden bg-white shadow-card">
                 <button
                   onClick={() => toggleLeague(league)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-wc-card hover:bg-wc-blue/10 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-wc-subtle transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     {LEAGUE_LOGO[league] ? (
@@ -139,16 +139,16 @@ export default function MatchesPage() {
                 </button>
 
                 {isOpen && (
-                  <div className="divide-y divide-wc-border">
+                  <div className="divide-y divide-wc-border border-t border-wc-border">
                     {groups[league].map((f) => (
                       <div
                         key={f.id}
-                        className="bg-wc-card px-4 py-3 flex items-center justify-between gap-4 hover:bg-wc-blue/5 transition-colors"
+                        className="bg-white px-4 py-3 flex items-center justify-between gap-4 hover:bg-wc-subtle transition-colors"
                       >
                         <div className="min-w-0 flex items-center gap-2">
                           <TeamLogo src={f.home_team_crest} alt={f.home_team} className="w-6 h-6" />
                           <div>
-                            <div className="font-semibold text-white">
+                            <div className="font-semibold text-wc-ink">
                               {f.home_team} vs {f.away_team}
                             </div>
                             <div className="text-xs text-wc-muted mt-0.5">
@@ -159,7 +159,7 @@ export default function MatchesPage() {
                         </div>
                         <Link
                           href={`/matches/${f.id}`}
-                          className="rounded-lg border border-wc-border px-3 py-1.5 text-xs text-wc-muted hover:text-white hover:border-wc-blue transition-colors shrink-0"
+                          className="rounded-lg border border-wc-border px-3 py-1.5 text-xs text-wc-muted hover:text-wc-ink hover:border-slate-300 transition-colors shrink-0"
                         >
                           View / Predict
                         </Link>

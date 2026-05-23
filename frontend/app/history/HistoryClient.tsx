@@ -14,8 +14,8 @@ const PREDICTORS: { key: string; label: string; color: string }[] = [
 ];
 
 const STATUS_STYLE: Record<string, string> = {
-  won:     "text-green-400",
-  lost:    "text-red-400",
+  won:     "text-emerald-600",
+  lost:    "text-red-600",
   pending: "text-wc-muted",
   void:    "text-wc-muted/50",
 };
@@ -58,14 +58,14 @@ function PredictorSection({
   const hiddenCount = predictions.length - recent.length;
 
   return (
-    <div className="rounded-xl border border-wc-border overflow-hidden">
+    <div className="rounded-xl border border-wc-border overflow-hidden bg-white shadow-card">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-wc-card hover:bg-wc-blue/10 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-wc-subtle transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full ${predictor.color}`} />
-          <span className="text-sm font-semibold text-white">{predictor.label}</span>
+          <span className="text-sm font-semibold text-wc-ink">{predictor.label}</span>
           <span className="text-xs text-wc-muted">
             ({predictions.length} bet{predictions.length !== 1 ? "s" : ""})
           </span>
@@ -74,15 +74,15 @@ function PredictorSection({
       </button>
 
       {open && (
-        <div>
+        <div className="border-t border-wc-border">
           {displayed.length === 0 ? (
-            <div className="bg-wc-navy px-4 py-8 text-center text-sm text-wc-muted">
+            <div className="bg-wc-subtle px-4 py-8 text-center text-sm text-wc-muted">
               No bets in the last 3 days.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-wc-navy text-wc-muted text-xs uppercase tracking-wider">
+                <thead className="bg-wc-subtle text-wc-muted text-xs uppercase tracking-wider">
                   <tr>
                     <th className="px-4 py-2 text-left">Date</th>
                     <th className="px-4 py-2 text-left">Match</th>
@@ -100,15 +100,15 @@ function PredictorSection({
                       <tr
                         key={p.id}
                         onClick={() => setSelected(p)}
-                        className="bg-wc-navy hover:bg-wc-card transition-colors cursor-pointer"
+                        className="bg-white hover:bg-wc-subtle transition-colors cursor-pointer"
                       >
                         <td className="px-4 py-3 text-wc-muted whitespace-nowrap">
                           {formatDate(p.created_at)}
                         </td>
-                        <td className="px-4 py-3 text-white whitespace-nowrap">
+                        <td className="px-4 py-3 text-wc-ink whitespace-nowrap">
                           {f ? `${f.home_team} vs ${f.away_team}` : `Fixture #${p.fixture_id}`}
                         </td>
-                        <td className="px-4 py-3 capitalize text-white">{p.bet_on}</td>
+                        <td className="px-4 py-3 capitalize text-wc-ink">{p.bet_on}</td>
                         <td className="px-4 py-3 text-right font-mono text-wc-muted">
                           {p.odds.toFixed(2)}
                         </td>
@@ -119,8 +119,8 @@ function PredictorSection({
                           className={`px-4 py-3 text-right font-mono ${
                             p.profit_loss !== null
                               ? p.profit_loss >= 0
-                                ? "text-green-400"
-                                : "text-red-400"
+                                ? "text-emerald-600"
+                                : "text-red-600"
                               : "text-wc-muted"
                           }`}
                         >
@@ -144,7 +144,7 @@ function PredictorSection({
           )}
 
           {hiddenCount > 0 && !showAll && (
-            <div className="px-4 py-3 bg-wc-navy border-t border-wc-border text-center">
+            <div className="px-4 py-3 bg-wc-subtle border-t border-wc-border text-center">
               <button
                 onClick={() => setShowAll(true)}
                 className="text-xs text-wc-gold hover:underline"

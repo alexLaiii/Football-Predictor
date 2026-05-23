@@ -9,8 +9,8 @@ export default async function HistoryPage() {
     <div>
       <div className="mb-6">
         <p className="text-xs text-wc-gold uppercase tracking-widest mb-1">FIFA World Cup 2026</p>
-        <h1 className="text-3xl font-bold text-white">Bet History</h1>
-        <p className="mt-1 text-wc-muted">Last 3 days shown by default. Expand a predictor to see their bets.</p>
+        <h1 className="text-3xl font-bold text-wc-ink tracking-tight">Bet History</h1>
+        <p className="mt-2 text-wc-muted">Last 3 days shown by default. Expand a predictor to see their bets.</p>
       </div>
       <HistoryClient predictions={predictions} fixtureMap={fixtureMap} />
     </div>

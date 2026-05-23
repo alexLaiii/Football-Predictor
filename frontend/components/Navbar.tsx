@@ -2,141 +2,149 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const CENTER_LINKS = [
-  { href: "/",        label: "Leaderboard" },
-  { href: "/matches", label: "Matches" },
-  { href: "/history", label: "History" },
+import { Pyramid, LandPlot, History, HandFist } from "lucide-react";
+const NAV_LINKS = [
+  { href: "/",          label: "Leaderboard", icon: Pyramid },
+  { href: "/matches",   label: "Matches",     icon: LandPlot },
+  { href: "/history",   label: "History",     icon: History },
+  { href: "/j-tracker", label: "J Tracker",   icon: HandFist},
 ];
 
-const RIGHT_LINK = { href: "/j-tracker", label: "J Tracker" };
-
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved === "1") setCollapsed(true);
   }, []);
 
+  function toggle() {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+      document.documentElement.style.setProperty("--sidebar-w", next ? "4rem" : "15rem");
+      return next;
+    });
+  }
+
+  const width = collapsed ? "w-16" : "w-60";
+
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out ${
-        scrolled
-          ? "bg-wc-card/85 backdrop-blur-md py-2 shadow-lg shadow-black/40 border-b border-wc-border/60"
-          : "bg-wc-card py-4 shadow-md shadow-black/10 border-b border-transparent"
-      }`}
-    >
-      <div className="mx-auto grid max-w-6xl grid-cols-3 items-center gap-4 px-6">
-        <Link
-          href="/"
-          onClick={() => setOpen(false)}
-          className="group flex items-center gap-3 min-w-0"
-        >
-          <Image
-            src="/logo.png"
-            alt="FIFA World Cup 2026"
-            loading="eager"
-            width={55}
-            height={55}
-            className={`object-contain transition-all duration-300 ease-out will-change-transform group-hover:scale-110 group-hover:-rotate-3 group-hover:drop-shadow-[0_0_10px_rgba(0,200,150,0.55)] shrink-0 ${
-              scrolled ? "!w-9 !h-9" : "!w-13 !h-13"
-            }`}
-          />
-          <div className="flex flex-col leading-tight min-w-0">
-            <span
-              className={`font-bold text-white truncate transition-all duration-300 ${
-                scrolled ? "text-sm" : "text-base"
-              }`}
-            >
-              Can Kim beat 5 AI
-            </span>
-            <span
-              className={`text-wc-gold uppercase tracking-widest text-[10px] overflow-hidden transition-all duration-300 ${
-                scrolled ? "max-h-0 opacity-0" : "max-h-3 opacity-100"
-              }`}
-            >
-              World Cup 2026
-            </span>
-          </div>
+    <>
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-wc-border flex items-center justify-between px-4 h-14">
+        <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+          <Image src="/logo.png" alt="logo" width={28} height={28} className="object-contain" />
+          <span className="text-sm font-semibold text-wc-ink">Kim vs AI</span>
         </Link>
-
-        {/* Desktop center links */}
-        <div className="hidden md:flex items-center justify-center gap-2 text-sm">
-          {CENTER_LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`rounded-full text-wc-muted hover:text-white transition-all duration-300 ${
-                scrolled ? "px-3 py-1.5" : "px-4 py-2"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Desktop right link / Mobile toggle */}
-        <div className="flex items-center justify-end">
-          <Link
-            href={RIGHT_LINK.href}
-            className={`hidden md:block rounded-full text-wc-muted hover:text-white transition-all duration-300 ${
-              scrolled ? "px-3 py-1.5" : "px-4 py-2"
-            }`}
-          >
-            {RIGHT_LINK.label}
-          </Link>
-          <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
+        <button
+          onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle navigation"
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          className="md:hidden inline-flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg text-wc-muted hover:text-white transition-colors"
+          className="inline-flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-lg text-wc-muted hover:text-wc-ink"
         >
-          <span
-            className={`block h-0.5 w-5 bg-current transition-transform duration-300 ${
-              open ? "translate-y-2 rotate-45" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 bg-current transition-opacity duration-200 ${
-              open ? "opacity-0" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 bg-current transition-transform duration-300 ${
-              open ? "-translate-y-2 -rotate-45" : ""
-            }`}
-          />
+          <span className={`block h-0.5 w-5 bg-current transition-transform duration-300 ${mobileOpen ? "translate-y-2 rotate-45" : ""}`} />
+          <span className={`block h-0.5 w-5 bg-current transition-opacity duration-200 ${mobileOpen ? "opacity-0" : ""}`} />
+          <span className={`block h-0.5 w-5 bg-current transition-transform duration-300 ${mobileOpen ? "-translate-y-2 -rotate-45" : ""}`} />
         </button>
-        </div>
-      </div>
+      </header>
 
-      {/* Mobile menu */}
+      {/* Mobile dropdown menu */}
       <div
-        id="mobile-nav"
-        className={`md:hidden mx-auto max-w-6xl px-6 overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
-          open ? "max-h-72 opacity-100 mt-3 pb-3" : "max-h-0 opacity-0"
+        className={`md:hidden fixed top-14 left-0 right-0 z-30 bg-white border-b border-wc-border overflow-hidden transition-[max-height] duration-300 ${
+          mobileOpen ? "max-h-72" : "max-h-0"
         }`}
       >
-        <div className="flex flex-col gap-1 text-sm">
-          {[...CENTER_LINKS, RIGHT_LINK].map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="px-4 py-2.5 rounded-lg text-wc-muted hover:text-white hover:bg-wc-blue/30 transition-colors"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
+        <nav className="flex flex-col p-2">
+          {NAV_LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  active ? "bg-wc-subtle text-wc-ink font-semibold" : "text-wc-muted hover:bg-wc-subtle hover:text-wc-ink"
+                }`}
+              >
+                <l.icon className="w-5 h-5 shrink-0" aria-hidden />
+                <span>{l.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </nav>
+
+      {/* Desktop left sidebar */}
+      <aside
+        className={`hidden md:flex fixed top-0 left-0 z-40 h-screen ${width} bg-white border-r border-wc-border flex-col transition-[width] duration-300 ease-out`}
+      >
+        {/* Header: logo + brand */}
+        <Link
+          href="/"
+          className={`flex items-center h-16 border-b border-wc-border ${
+            collapsed ? "justify-center px-0" : "gap-3 px-4"
+          }`}
+        >
+          <Image src="/logo.png" alt="logo" width={32} height={32} className="object-contain shrink-0" />
+          {!collapsed && (
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-sm font-bold text-wc-ink truncate">Kim vs AI</span>
+              <span className="text-[10px] text-wc-gold uppercase tracking-widest">World Cup 2026</span>
+            </div>
+          )}
+        </Link>
+
+        {/* Nav links */}
+        <nav className="flex-1 overflow-y-auto py-3">
+          <ul className="flex flex-col gap-1 px-2">
+            {NAV_LINKS.map((l) => {
+              const active = pathname === l.href;
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    title={collapsed ? l.label : undefined}
+                    className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                      active
+                        ? "bg-wc-subtle text-wc-ink font-semibold"
+                        : "text-wc-muted hover:bg-wc-subtle hover:text-wc-ink"
+                    } ${collapsed ? "justify-center" : ""}`}
+                  >
+                    <l.icon className="w-5 h-5 shrink-0" aria-hidden />
+                    {!collapsed && <span className="truncate">{l.label}</span>}
+                    {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-wc-gold" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Edge fold-toggle: small circular button on the right border */}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute top-7 -right-3 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-wc-border bg-white text-wc-muted shadow-card hover:text-wc-ink hover:border-slate-400 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-3 w-3 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+      </aside>
+    </>
   );
 }

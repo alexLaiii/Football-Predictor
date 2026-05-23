@@ -21,22 +21,22 @@ export default function MatchContextDebug( { predictions }: { predictions: Predi
       </button>
 
       {open && (
-        <div className="mt-2 rounded-lg border border-wc-border bg-wc-card p-4">
+        <div className="mt-2 rounded-lg border border-wc-border bg-white p-4 shadow-card">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs font-semibold text-wc-gold uppercase tracking-widest">
               Data used for prediction
             </span>
             {isMock ? (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-900/60 text-yellow-300 border border-yellow-700">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                 MOCK DATA
               </span>
             ) : (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-green-900/60 text-green-300 border border-green-700">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 REAL DATA
               </span>
             )}
           </div>
-          <pre className="text-xs text-wc-muted overflow-auto max-h-[500px] leading-relaxed whitespace-pre-wrap">
+          <pre className="text-xs text-wc-muted overflow-auto max-h-[500px] leading-relaxed whitespace-pre-wrap bg-wc-subtle border border-wc-border rounded-md p-3">
             {snapshot}
           </pre>
         </div>

@@ -4,12 +4,12 @@ import { useState } from "react";
 import type { Prediction } from "@/lib/api";
 
 const MODEL_COLORS: Record<string, string> = {
-  sirkim:   "border-yellow-600 bg-yellow-950/40",
-  claude:   "border-violet-600 bg-violet-950/40",
-  gpt5:     "border-green-600 bg-green-950/40",
-  gemini:   "border-blue-600 bg-blue-950/40",
-  grok:     "border-orange-600 bg-orange-950/40",
-  deepseek: "border-cyan-600 bg-cyan-950/40",
+  sirkim:   "border-amber-200 bg-amber-50",
+  claude:   "border-violet-200 bg-violet-50",
+  gpt5:     "border-emerald-200 bg-emerald-50",
+  gemini:   "border-blue-200 bg-blue-50",
+  grok:     "border-orange-200 bg-orange-50",
+  deepseek: "border-cyan-200 bg-cyan-50",
 };
 
 const MODEL_LABELS: Record<string, string> = {
@@ -22,29 +22,29 @@ const MODEL_LABELS: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: "bg-wc-card text-wc-muted border border-wc-border",
-  won:     "bg-green-900/60 text-green-300 border border-green-700",
-  lost:    "bg-red-900/60 text-red-300 border border-red-800",
-  void:    "bg-wc-card text-wc-muted border border-wc-border",
+  pending: "bg-white text-wc-muted border border-wc-border",
+  won:     "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  lost:    "bg-red-50 text-red-700 border border-red-200",
+  void:    "bg-white text-wc-muted border border-wc-border",
 };
 
 function ProbBar({ label, value, active, valueScore }: { label: string; value: number; active: boolean; valueScore?: number | null }) {
   return (
     <div className="flex items-center gap-2">
-      <span className={`w-12 text-xs ${active ? "text-white font-semibold" : "text-wc-muted"}`}>
+      <span className={`w-12 text-xs ${active ? "text-wc-ink font-semibold" : "text-wc-muted"}`}>
         {label}
       </span>
       <div className="flex-1 bg-wc-border rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all ${active ? "bg-wc-red" : "bg-wc-blue/50"}`}
+          className={`h-2 rounded-full transition-all ${active ? "bg-wc-red" : "bg-slate-300"}`}
           style={{ width: `${(value * 100).toFixed(0)}%` }}
         />
       </div>
-      <span className={`w-10 text-right text-xs ${active ? "text-white" : "text-wc-muted"}`}>
+      <span className={`w-10 text-right text-xs ${active ? "text-wc-ink" : "text-wc-muted"}`}>
         {(value * 100).toFixed(0)}%
       </span>
       {valueScore != null && (
-        <span className={`w-10 text-right text-xs ${valueScore >= 1 ? "text-green-400" : "text-red-400"}`}>
+        <span className={`w-10 text-right text-xs ${valueScore >= 1 ? "text-emerald-600" : "text-red-600"}`}>
           {valueScore.toFixed(2)}x
         </span>
       )}
@@ -55,7 +55,7 @@ function ProbBar({ label, value, active, valueScore }: { label: string; value: n
 export default function PredictionCard({ prediction }: { prediction: Prediction }) {
   const [expanded, setExpanded] = useState(false);
   const isSirKim = prediction.model_name === "sirkim";
-  const colorClass = MODEL_COLORS[prediction.model_name] ?? "border-wc-border bg-wc-card";
+  const colorClass = MODEL_COLORS[prediction.model_name] ?? "border-wc-border bg-white";
   const label = MODEL_LABELS[prediction.model_name] ?? prediction.model_name;
 
   const homeProb = isSirKim ? (prediction.bet_on === "home" ? 1 : 0) : prediction.home_prob;
@@ -63,12 +63,12 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
   const awayProb = isSirKim ? (prediction.bet_on === "away" ? 1 : 0) : prediction.away_prob;
 
   return (
-    <div className={`rounded-xl border p-4 ${colorClass}`}>
+    <div className={`rounded-xl border p-4 shadow-card ${colorClass}`}>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="font-bold text-white">{label}</div>
+          <div className="font-bold text-wc-ink">{label}</div>
           <div className="text-xs text-wc-muted mt-0.5">
-            Betting <span className="text-white font-medium capitalize">{prediction.bet_on}</span>
+            Betting <span className="text-wc-ink font-medium capitalize">{prediction.bet_on}</span>
             {" @ "}<span className="text-wc-gold font-medium">{prediction.odds.toFixed(2)}</span>
           </div>
         </div>
@@ -89,11 +89,11 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
       <div className="flex gap-4 text-xs text-wc-muted mb-3">
         {!isSirKim && (
           <div>
-            Confidence <span className="text-white">{(prediction.confidence * 100).toFixed(0)}%</span>
+            Confidence <span className="text-wc-ink">{(prediction.confidence * 100).toFixed(0)}%</span>
           </div>
         )}
         <div>
-          EV <span className={prediction.expected_value >= 0 ? "text-green-400" : "text-red-400"}>
+          EV <span className={prediction.expected_value >= 0 ? "text-emerald-600" : "text-red-600"}>
             {prediction.expected_value >= 0 ? "+" : ""}{prediction.expected_value.toFixed(3)}
           </span>
         </div>

@@ -6,8 +6,8 @@ import { getJTracker, resetJStreak, type JTrackerData, type JUserData } from "@/
 const START_DATE = "2026-05-20";
 const USER_LABELS: Record<string, string> = { sir_kim: "Sir Kim", me: "Me" };
 const USER_COLOR: Record<string, { tick: string; reset: string; badge: string }> = {
-  sir_kim: { tick: "text-blue-400", reset: "text-red-400",  badge: "bg-blue-900/60 text-blue-300 border-blue-700" },
-  me:      { tick: "text-green-400", reset: "text-red-400", badge: "bg-green-900/60 text-green-300 border-green-700" },
+  sir_kim: { tick: "text-blue-600",    reset: "text-red-600",  badge: "bg-blue-50 text-blue-700 border-blue-200" },
+  me:      { tick: "text-emerald-600", reset: "text-red-600",  badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 };
 const USERS = ["sir_kim", "me"] as const;
 
@@ -73,9 +73,9 @@ export default function JTrackerPage() {
   if (!data)   return <p className="text-wc-muted p-8">Failed to load.</p>;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Days Without Hitting J</h1>
+        <h1 className="text-3xl font-bold text-wc-ink">Days Without Hitting J</h1>
         <p className="text-wc-muted mt-1 text-sm">Stay strong. Don&apos;t hit J.</p>
       </div>
 
@@ -85,24 +85,24 @@ export default function JTrackerPage() {
           const ud = data[user];
           const colors = USER_COLOR[user];
           return (
-            <div key={user} className="rounded-xl border border-wc-border bg-wc-card p-5 space-y-3">
+            <div key={user} className="rounded-xl border border-wc-border bg-white p-5 space-y-3 shadow-card">
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colors.badge}`}>
                   {USER_LABELS[user]}
                 </span>
               </div>
               <div>
-                <span className="text-4xl font-bold text-white">{ud.current_streak}</span>
+                <span className="text-4xl font-bold text-wc-ink">{ud.current_streak}</span>
                 <span className="text-sm text-wc-muted ml-1">days clean</span>
               </div>
               <div className="text-xs text-wc-muted">
                 Longest streak:{" "}
-                <span className="text-white font-semibold">{ud.longest_streak} days</span>
+                <span className="text-wc-ink font-semibold">{ud.longest_streak} days</span>
               </div>
               <button
                 onClick={() => handleReset(user)}
                 disabled={resetting[user]}
-                className="w-full rounded-lg bg-wc-red px-4 py-2 text-sm font-medium text-white hover:bg-[#a50d25] disabled:opacity-50 transition-colors"
+                className="w-full rounded-lg bg-wc-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {resetting[user] ? "Resetting…" : "I hit J 😔"}
               </button>
@@ -112,21 +112,21 @@ export default function JTrackerPage() {
       </div>
 
       {/* Calendar */}
-      <div className="rounded-xl border border-wc-border bg-wc-card p-5">
+      <div className="rounded-xl border border-wc-border bg-white p-5 shadow-card">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
-            className="text-wc-muted hover:text-white px-3 py-1 rounded transition-colors"
+            className="text-wc-muted hover:text-wc-ink px-3 py-1 rounded transition-colors"
           >
             ◀
           </button>
-          <span className="text-white font-semibold">
-            {currentMonth.toLocaleString("en-GB", { month: "long", year: "numeric" })}
+          <span className="text-wc-ink font-semibold">
+            {currentMonth.toLocaleString(undefined, { month: "long", year: "numeric" })}
           </span>
           <button
             onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
-            className="text-wc-muted hover:text-white px-3 py-1 rounded transition-colors"
+            className="text-wc-muted hover:text-wc-ink px-3 py-1 rounded transition-colors"
           >
             ▶
           </button>
@@ -155,10 +155,10 @@ export default function JTrackerPage() {
                 key={day}
                 className={`rounded-lg p-1 min-h-[54px] flex flex-col items-center gap-0.5 pt-1 border ${
                   isBeforeStart
-                    ? "border-wc-border/10 opacity-30"
+                    ? "border-wc-border/40 opacity-50"
                     : isToday
-                    ? "border-wc-gold bg-wc-gold/5"
-                    : "border-wc-border/20"
+                    ? "border-wc-gold bg-emerald-50"
+                    : "border-wc-border bg-white"
                 }`}
               >
                 <span className={`text-[11px] font-semibold ${isToday ? "text-wc-gold" : "text-wc-muted"}`}>
@@ -189,16 +189,16 @@ export default function JTrackerPage() {
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4 text-xs text-wc-muted border-t border-wc-border pt-3">
-          <span><span className="text-blue-400 font-bold">✓</span> Sir Kim clean</span>
-          <span><span className="text-green-400 font-bold">✓</span> Me clean</span>
-          <span><span className="text-red-400 font-bold">✗</span> Reset</span>
+          <span><span className="text-blue-600 font-bold">✓</span> Sir Kim clean</span>
+          <span><span className="text-emerald-600 font-bold">✓</span> Me clean</span>
+          <span><span className="text-red-600 font-bold">✗</span> Reset</span>
         </div>
       </div>
 
       {/* Grok modal */}
       {modal.open && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-          <div className="bg-wc-card border border-wc-border rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-wc-border rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🤬</span>
               <div>
@@ -206,10 +206,10 @@ export default function JTrackerPage() {
                 <p className="text-wc-muted text-xs">To {USER_LABELS[modal.user]}</p>
               </div>
             </div>
-            <p className="text-white text-lg leading-relaxed">{modal.message}</p>
+            <p className="text-wc-ink text-lg leading-relaxed">{modal.message}</p>
             <button
               onClick={() => setModal({ open: false, message: "", user: "" })}
-              className="w-full rounded-lg border border-wc-border px-4 py-2 text-sm text-wc-muted hover:text-white hover:border-wc-blue transition-colors"
+              className="w-full rounded-lg border border-wc-border px-4 py-2 text-sm text-wc-muted hover:text-wc-ink hover:border-slate-300 transition-colors"
             >
               收皮
             </button>

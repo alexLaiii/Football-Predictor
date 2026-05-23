@@ -22,9 +22,9 @@ export default function LeaderboardTable({ data }: { data: ModelPerformance[] })
   const sorted = [...data].sort((a, b) => b.bankroll - a.bankroll);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-wc-border">
+    <div className="overflow-x-auto rounded-xl border border-wc-border bg-white shadow-card">
       <table className="w-full text-sm">
-        <thead className="bg-wc-card text-wc-muted text-xs uppercase tracking-wider">
+        <thead className="bg-wc-subtle text-wc-muted text-xs uppercase tracking-wider">
           <tr>
             <th className="px-4 py-3 text-left">Rank</th>
             <th className="px-4 py-3 text-left">Model</th>
@@ -37,36 +37,36 @@ export default function LeaderboardTable({ data }: { data: ModelPerformance[] })
         </thead>
         <tbody className="divide-y divide-wc-border">
           {sorted.map((m, i) => (
-            <tr key={m.model_name} className="bg-wc-navy hover:bg-wc-card transition-colors">
+            <tr key={m.model_name} className="bg-white hover:bg-wc-subtle transition-colors">
               <td className="px-4 py-3 font-mono font-bold">
-                <span className={i === 0 ? "text-wc-gold" : i === 1 ? "text-slate-300" : i === 2 ? "text-amber-600" : "text-wc-muted"}>
+                <span className={i === 0 ? "text-wc-gold" : i === 1 ? "text-slate-500" : i === 2 ? "text-amber-600" : "text-wc-muted"}>
                   #{i + 1}
                 </span>
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${MODEL_COLORS[m.model_name] ?? "bg-wc-muted"}`} />
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-wc-ink">
                     {MODEL_LABELS[m.model_name] ?? m.model_name}
                   </span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-right font-mono text-white">
+              <td className="px-4 py-3 text-right font-mono text-wc-ink">
                 ${m.bankroll.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </td>
-              <td className={`px-4 py-3 text-right font-mono ${m.total_profit_loss >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <td className={`px-4 py-3 text-right font-mono ${m.total_profit_loss >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                 {m.total_profit_loss >= 0 ? "+" : ""}${m.total_profit_loss.toFixed(2)}
               </td>
-              <td className={`px-4 py-3 text-right font-mono ${m.roi >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <td className={`px-4 py-3 text-right font-mono ${m.roi >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                 {m.roi >= 0 ? "+" : ""}{(m.roi * 100).toFixed(1)}%
               </td>
               <td className="px-4 py-3 text-right text-wc-muted">
                 {(m.win_rate * 100).toFixed(1)}%
               </td>
               <td className="px-4 py-3 text-right text-wc-muted">
-                <span className="text-green-400">{m.won}W</span>
+                <span className="text-emerald-600">{m.won}W</span>
                 {" / "}
-                <span className="text-red-400">{m.lost}L</span>
+                <span className="text-red-600">{m.lost}L</span>
                 {m.pending > 0 && <span className="text-wc-muted/50"> / {m.pending}P</span>}
               </td>
             </tr>

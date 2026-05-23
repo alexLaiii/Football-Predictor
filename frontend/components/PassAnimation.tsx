@@ -1,8 +1,8 @@
 export default function PassAnimation() {
   return (
     <div className="pass-anim w-full max-w-sm mx-auto px-6 pb-8 pt-12">
-      <svg viewBox="0 0 300 80" className="w-full h-auto opacity-60">
-        <g stroke="#8b9bc4" strokeWidth="1.8" fill="none" strokeLinecap="round">
+      <svg viewBox="0 0 300 80" className="w-full h-auto">
+        <g stroke="#000000" strokeWidth="1.8" fill="none" strokeLinecap="round">
           {/* Left stickman (faces right) */}
           <g className="stickman-l">
             <circle cx="40" cy="18" r="6" />
@@ -25,10 +25,10 @@ export default function PassAnimation() {
         </g>
 
         {/* Ground line */}
-        <line x1="20" y1="68" x2="280" y2="68" stroke="#8b9bc4" strokeWidth="0.5" opacity="0.4" />
+        <line x1="20" y1="68" x2="280" y2="68" stroke="#000000" strokeWidth="0.8" />
 
         {/* Ball */}
-        <circle r="3.5" fill="#ffffff" className="pass-ball" />
+        <circle r="3.5" fill="#000000" className="pass-ball" />
       </svg>
     </div>
   );

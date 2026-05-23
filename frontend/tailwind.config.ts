@@ -10,13 +10,15 @@ const config: Config = {
     extend: {
       colors: {
         wc: {
-          navy:   "#0d0f1e",
-          card:   "#13162b",
-          border: "#1e2240",
-          red:    "#f0294a",
-          gold:   "#00c896",
-          muted:  "#6b7a9e",
-          blue:   "#1e2240",
+          navy:   "#ffffff",
+          card:   "#ffffff",
+          border: "#e5e7eb",
+          red:    "#dc2626",
+          gold:   "#059669",
+          muted:  "#64748b",
+          blue:   "#f1f5f9",
+          ink:    "#0f172a",
+          subtle: "#f8fafc",
         },
         claude:      "#7c3aed",
         gpt5:        "#16a34a",
@@ -24,6 +26,9 @@ const config: Config = {
         grok:        "#ea580c",
         sirkim:      "#ca8a04",
         deepseek:    "#0891b2",
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06)",
       },
     },
   },

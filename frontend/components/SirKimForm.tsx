@@ -65,10 +65,10 @@ export default function SirKimForm({ fixtureId, homeTeam, awayTeam, homeTeamCres
   }
 
   return (
-    <div className="rounded-xl border border-wc-border bg-wc-card p-6 max-w-lg mx-auto">
+    <div className="rounded-xl border border-wc-border bg-white p-6 max-w-lg mx-auto shadow-card">
       <div className="mb-5">
         <p className="text-xs text-wc-gold uppercase tracking-widest mb-1">Manual Predictor</p>
-        <h2 className="text-xl font-bold text-white">Sir Kim&apos;s Prediction</h2>
+        <h2 className="text-xl font-bold text-wc-ink">Sir Kim&apos;s Prediction</h2>
         <p className="mt-1 text-sm text-wc-muted">
           Submit your pick to trigger all AI predictors.
         </p>
@@ -88,8 +88,8 @@ export default function SirKimForm({ fixtureId, homeTeam, awayTeam, homeTeamCres
                   onClick={() => setBetOn(value)}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors flex flex-col items-center gap-1 ${
                     betOn === value
-                      ? "border-wc-gold bg-wc-gold/10 text-wc-gold"
-                      : "border-wc-border text-wc-muted hover:border-wc-blue hover:text-white"
+                      ? "border-wc-gold bg-emerald-50 text-wc-gold"
+                      : "border-wc-border text-wc-muted hover:border-slate-300 hover:text-wc-ink"
                   }`}
                 >
                   <TeamLogo src={crest} alt={label} className="w-6 h-6" />
@@ -104,7 +104,7 @@ export default function SirKimForm({ fixtureId, homeTeam, awayTeam, homeTeamCres
           <div className="flex justify-between text-xs text-wc-muted uppercase tracking-wider mb-2">
             <span>Bet Amount</span>
             {bankroll !== null && (
-              <span>Available <span className="text-white font-medium">${bankroll.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></span>
+              <span>Available <span className="text-wc-ink font-medium">${bankroll.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></span>
             )}
           </div>
           <div className="relative">
@@ -116,17 +116,17 @@ export default function SirKimForm({ fixtureId, homeTeam, awayTeam, homeTeamCres
               value={stake}
               onChange={(e) => setStake(e.target.value)}
               placeholder="0.00"
-              className="w-full rounded-lg border border-wc-border bg-wc-navy text-sm text-white placeholder:text-wc-muted/50 pl-7 pr-3 py-2 focus:outline-none focus:border-wc-blue"
+              className="w-full rounded-lg border border-wc-border bg-white text-sm text-wc-ink placeholder:text-wc-muted/50 pl-7 pr-3 py-2 focus:outline-none focus:border-wc-gold focus:ring-1 focus:ring-wc-gold/30"
             />
           </div>
         </div>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-red-600">{error}</p>}
 
         <button
           type="submit"
           disabled={loading || !stake}
-          className="w-full rounded-lg bg-wc-red px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#a50d25] disabled:opacity-50 transition-colors"
+          className="w-full rounded-lg bg-wc-ink px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
         >
           {loading ? "Placing bet…" : "Submit Prediction"}
         </button>
