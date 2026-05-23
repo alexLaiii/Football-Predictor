@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -5,7 +7,7 @@ from app.database import get_db
 from app.models.fixture import Fixture
 from app.models.prediction import Prediction
 from app.schemas import PredictionOut, SirKimInput
-from app.services.ai.orchestrator import get_bankroll, run_predictions
+from app.services.ai.orchestrator import get_bankroll, predict_all_in_background, run_predictions
 from app.services.odds_api import fetch_odds
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -63,13 +65,11 @@ async def submit_sirkim_prediction(
     )
     sirkim_odds = round(float(odds_data.get(body.bet_on, 2.5)), 2)
 
-    # Derive implied probabilities from bookmaker odds (overround-adjusted)
     raw = {k: 1 / float(odds_data.get(k, 2.5)) for k in ("home", "draw", "away")}
     total = sum(raw.values())
     home_prob = round(raw["home"] / total, 3)
     draw_prob = round(raw["draw"] / total, 3)
     away_prob = round(1 - home_prob - draw_prob, 3)
-
     confidence = round({"home": home_prob, "draw": draw_prob, "away": away_prob}[body.bet_on], 3)
     ev = round(confidence * sirkim_odds - 1, 3)
 
@@ -90,5 +90,14 @@ async def submit_sirkim_prediction(
     db.commit()
     db.refresh(sirkim_pred)
 
-    ai_predictions = await run_predictions(fixture, db)
-    return [sirkim_pred] + ai_predictions
+    fixture_dict = {
+        "external_id": fixture.external_id,
+        "home_team": fixture.home_team,
+        "away_team": fixture.away_team,
+        "league": fixture.league,
+    }
+    asyncio.create_task(
+        predict_all_in_background(fixture.id, fixture_dict, fixture.external_id)
+    )
+
+    return [sirkim_pred]

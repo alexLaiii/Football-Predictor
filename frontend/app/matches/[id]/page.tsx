@@ -1,9 +1,12 @@
 import { getFixture } from "@/lib/api";
 import PredictionCard from "@/components/PredictionCard";
+import PredictionsPoller from "@/components/PredictionsPoller";
 import SirKimForm from "@/components/SirKimForm";
 import TeamLogo from "@/components/TeamLogo";
 import MatchContextDebug from "@/components/MatchContextDebug";
 import Link from "next/link";
+
+const TOTAL_PREDICTIONS = 6; // sirkim + 5 AI models
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
@@ -64,11 +67,21 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           awayTeamCrest={fixture.away_team_crest}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fixture.predictions.map((p) => (
-            <PredictionCard key={p.id} prediction={p} />
-          ))}
-        </div>
+        <>
+          {fixture.predictions.length < TOTAL_PREDICTIONS && (
+            <>
+              <PredictionsPoller />
+              <p className="text-sm text-wc-muted animate-pulse mb-4">
+                AI models predicting… ({Math.max(0, fixture.predictions.length - 1)}/5 done)
+              </p>
+            </>
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {fixture.predictions.map((p) => (
+              <PredictionCard key={p.id} prediction={p} />
+            ))}
+          </div>
+        </>
       )}
 
       {fixture.predictions.length > 0 && (

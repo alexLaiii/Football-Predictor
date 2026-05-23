@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.fixture import Fixture
 from app.models.prediction import Prediction
-from app.services.ai.claude import ClaudePredictor, SYSTEM_PROMPT
+from app.services.ai.claude import ClaudePredictor
 from app.services.ai.gemini import GeminiPredictor
 from app.services.ai.gpt5 import GPT5Predictor
 from app.services.ai.grok import GrokPredictor
@@ -37,32 +37,12 @@ def get_bankroll(model_name: str, db: Session) -> float:
     return INITIAL_BANKROLL + float(settled_pl) - float(pending_stakes)
 
 
-async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
-    fixture_dict = {
-        "external_id": fixture.external_id,
-        "home_team": fixture.home_team,
-        "away_team": fixture.away_team,
-        "league": fixture.league,
-    }
-
-    match_context, odds = await asyncio.gather(
-        fetch_match_context(fixture.external_id),
-        fetch_odds(fixture.external_id, home_team=fixture_dict["home_team"],
-                   away_team=fixture_dict["away_team"], league=fixture_dict["league"]),
-    )
-
-    user_message = (
-        f"Match: {fixture.home_team} vs {fixture.away_team}\n"
-        f"League: {fixture.league}\n"
-        f"Odds: Home={odds['home']:.2f}, Draw={odds['draw']:.2f}, Away={odds['away']:.2f}\n"
-        f"Context: {json.dumps(match_context, indent=2)}"
-    )
-
-    is_mock = not settings.apifootball_api_key or fixture.external_id.startswith("mock_")
+def _build_prompt_snapshot(fixture_dict: dict, match_context: dict, odds: dict, external_id: str) -> str:
+    is_mock = not settings.apifootball_api_key or external_id.startswith("mock_")
     label = "MOCK" if is_mock else "REAL"
     data_lines = [f"USED DATA ({label}):"]
-    data_lines.append(f"match: {fixture.home_team} vs {fixture.away_team}")
-    data_lines.append(f"league: {fixture.league}")
+    data_lines.append(f"match: {fixture_dict['home_team']} vs {fixture_dict['away_team']}")
+    data_lines.append(f"league: {fixture_dict['league']}")
     data_lines.append(f"odds_home: {odds['home']:.2f}")
     data_lines.append(f"odds_draw: {odds['draw']:.2f}")
     data_lines.append(f"odds_away: {odds['away']:.2f}")
@@ -74,9 +54,102 @@ async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
                 data_lines.append(f"{key}_{subkey}: {subval}")
         else:
             data_lines.append(f"{key}: {val}")
-    prompt_snapshot = "\n".join(data_lines)
+    return "\n".join(data_lines)
 
-    # Snapshot bankrolls before firing concurrent AI calls
+
+async def run_single_prediction(
+    predictor,
+    fixture_id: int,
+    fixture_dict: dict,
+    match_context: dict,
+    odds: dict,
+    bankroll: float,
+    prompt_snapshot: str,
+) -> None:
+    """Run one AI model and save its result immediately when done."""
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
+        result = await predictor.predict(fixture_dict, match_context, odds, bankroll)
+        prediction = Prediction(
+            fixture_id=fixture_id,
+            model_name=result.model_name,
+            home_prob=result.home_prob,
+            draw_prob=result.draw_prob,
+            away_prob=result.away_prob,
+            bet_on=result.bet_on,
+            confidence=result.confidence,
+            expected_value=result.expected_value,
+            stake=result.stake,
+            odds=result.odds,
+            reasoning=result.reasoning,
+            prompt_snapshot=prompt_snapshot,
+            home_value_score=result.home_value_score,
+            draw_value_score=result.draw_value_score,
+            away_value_score=result.away_value_score,
+        )
+        db.add(prediction)
+        db.commit()
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
+async def predict_all_in_background(
+    fixture_id: int,
+    fixture_dict: dict,
+    external_id: str,
+) -> None:
+    """Fetch context + odds once, then run all AI models in parallel.
+    Each model saves to DB as soon as it finishes — no waiting for slow models."""
+    from app.database import SessionLocal
+    try:
+        match_context, odds = await asyncio.gather(
+            fetch_match_context(external_id),
+            fetch_odds(
+                external_id,
+                home_team=fixture_dict["home_team"],
+                away_team=fixture_dict["away_team"],
+                league=fixture_dict["league"],
+            ),
+        )
+        prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, external_id)
+
+        db = SessionLocal()
+        try:
+            bankrolls = {p.name: get_bankroll(p.name, db) for p in PREDICTORS}
+        finally:
+            db.close()
+
+        await asyncio.gather(*[
+            run_single_prediction(p, fixture_id, fixture_dict, match_context, odds, bankrolls[p.name], prompt_snapshot)
+            for p in PREDICTORS
+        ])
+    except Exception:
+        pass
+
+
+async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
+    """Run all AI predictions in parallel and return them (used by /predictions/request endpoint)."""
+    fixture_dict = {
+        "external_id": fixture.external_id,
+        "home_team": fixture.home_team,
+        "away_team": fixture.away_team,
+        "league": fixture.league,
+    }
+
+    match_context, odds = await asyncio.gather(
+        fetch_match_context(fixture.external_id),
+        fetch_odds(
+            fixture.external_id,
+            home_team=fixture_dict["home_team"],
+            away_team=fixture_dict["away_team"],
+            league=fixture_dict["league"],
+        ),
+    )
+
+    prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, fixture.external_id)
     bankrolls = {p.name: get_bankroll(p.name, db) for p in PREDICTORS}
 
     results = await asyncio.gather(

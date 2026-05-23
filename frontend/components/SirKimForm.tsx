@@ -128,7 +128,7 @@ export default function SirKimForm({ fixtureId, homeTeam, awayTeam, homeTeamCres
           disabled={loading || !stake}
           className="w-full rounded-lg bg-wc-red px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#a50d25] disabled:opacity-50 transition-colors"
         >
-          {loading ? "Submitting & running AI predictions…" : "Submit Prediction"}
+          {loading ? "Placing bet…" : "Submit Prediction"}
         </button>
       </form>
     </div>
