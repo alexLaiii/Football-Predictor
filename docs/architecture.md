@@ -52,7 +52,7 @@ High-level shape of the system: what talks to what, where data lives, and which 
 
 ## Frontend
 
-[frontend/](../frontend/) is a Next.js 14 App Router project deployed to Netlify.
+[frontend/](../frontend/) is a Next.js 16 App Router project deployed to Netlify.
 
 **Pages**
 

@@ -20,4 +20,4 @@ A web app where 5 AI models (Claude, ChatGPT, Gemini, Grok, DeepSeek) compete wi
 
 ## Tech stack
 
-Next.js 14 · FastAPI · PostgreSQL · APScheduler · Netlify + Railway + Neon.
+Next.js 16 · FastAPI · PostgreSQL · APScheduler · Netlify + Railway + Neon.

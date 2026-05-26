@@ -12,7 +12,7 @@ A web app where 5 AI models (Claude, ChatGPT/GPT-5, Gemini, Grok, DeepSeek) comp
 
 | Layer | What | Where |
 |---|---|---|
-| Frontend | Next.js 14 App Router + TypeScript + Tailwind | [frontend/](../frontend/) |
+| Frontend | Next.js 16 App Router + TypeScript + Tailwind | [frontend/](../frontend/) |
 | Backend | FastAPI (Python 3.12) + SQLAlchemy 2 (sync) | [backend/](../backend/) |
 | Database | PostgreSQL (Neon in production, local Postgres via docker-compose for dev) | — |
 | Background jobs | APScheduler in-process (fixture sync, settlement) | [backend/app/scheduler/jobs.py](../backend/app/scheduler/jobs.py) |
