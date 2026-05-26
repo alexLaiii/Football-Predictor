@@ -16,6 +16,10 @@ frontend/.wrangler/
 frontend/.env
 frontend/.env.*
 
+# Test / debug scripts
+test_*.py
+*_test.py
+
 # Misc
 *.log
 .DS_Store

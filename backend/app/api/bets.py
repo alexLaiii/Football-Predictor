@@ -1,0 +1,260 @@
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.fixture import Fixture
+from app.models.prediction import Prediction
+from app.models.user import User
+from app.models.user_bet import UserBet
+from app.schemas import (
+    CompareEntry,
+    CompareOut,
+    CompareSummary,
+    LeaderboardEntry,
+    PredictionOut,
+    UserBetInput,
+    UserBetOut,
+)
+from app.services.ai.orchestrator import predict_all_in_background
+from app.services.auth import get_current_user
+from app.services.odds_api import fetch_odds
+
+router = APIRouter(prefix="/bets", tags=["bets"])
+
+INITIAL_BANKROLL = 20_000.0
+_AI_MODELS = ["claude", "gpt5", "gemini", "grok", "deepseek"]
+_AI_LABELS = {
+    "claude": "Claude",
+    "gpt5": "ChatGPT",
+    "gemini": "Gemini",
+    "grok": "Grok",
+    "deepseek": "DeepSeek",
+}
+
+
+def _user_bankroll(user_id: int, db: Session) -> float:
+    settled_pl = db.query(func.coalesce(func.sum(UserBet.profit_loss), 0)).filter(
+        UserBet.user_id == user_id,
+        UserBet.status.in_(["won", "lost"]),
+    ).scalar()
+    pending_stakes = db.query(func.coalesce(func.sum(UserBet.stake), 0)).filter(
+        UserBet.user_id == user_id,
+        UserBet.status == "pending",
+    ).scalar()
+    return INITIAL_BANKROLL + float(settled_pl) - float(pending_stakes)
+
+
+@router.get("/me/bankroll")
+def my_bankroll(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return {"bankroll": round(_user_bankroll(user.id, db), 2)}
+
+
+@router.get("/me", response_model=list[UserBetOut])
+def list_my_bets(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return (
+        db.query(UserBet)
+        .join(Fixture, Fixture.id == UserBet.fixture_id)
+        .filter(UserBet.user_id == user.id)
+        .order_by(Fixture.kickoff_at.desc())
+        .all()
+    )
+
+
+@router.get("/me/by-fixture/{fixture_id}", response_model=UserBetOut | None)
+def my_bet_for_fixture(
+    fixture_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(UserBet)
+        .filter(UserBet.user_id == user.id, UserBet.fixture_id == fixture_id)
+        .first()
+    )
+
+
+@router.post("/{fixture_id}", response_model=UserBetOut)
+async def place_bet(
+    fixture_id: int,
+    body: UserBetInput,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+
+    existing = (
+        db.query(UserBet)
+        .filter(UserBet.user_id == user.id, UserBet.fixture_id == fixture_id)
+        .first()
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="You have already bet on this match")
+
+    if body.stake <= 0:
+        raise HTTPException(status_code=400, detail="Stake must be positive")
+
+    bankroll = _user_bankroll(user.id, db)
+    if body.stake > bankroll:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Stake ${body.stake:.2f} exceeds available bankroll ${bankroll:.2f}",
+        )
+
+    odds_data = await fetch_odds(
+        fixture.external_id,
+        home_team=fixture.home_team,
+        away_team=fixture.away_team,
+        league=fixture.league,
+    )
+    bet_odds = round(float(odds_data.get(body.bet_on, 2.5)), 2)
+
+    bet = UserBet(
+        user_id=user.id,
+        fixture_id=fixture.id,
+        bet_on=body.bet_on,
+        stake=round(body.stake, 2),
+        odds=bet_odds,
+    )
+    db.add(bet)
+    db.commit()
+    db.refresh(bet)
+
+    # Only trigger AI predictions for this fixture once — reuse if any already exist.
+    ai_exists = (
+        db.query(Prediction)
+        .filter(Prediction.fixture_id == fixture.id)
+        .first()
+    )
+    if not ai_exists:
+        fixture_dict = {
+            "external_id": fixture.external_id,
+            "home_team": fixture.home_team,
+            "away_team": fixture.away_team,
+            "league": fixture.league,
+        }
+        asyncio.create_task(
+            predict_all_in_background(fixture.id, fixture_dict, fixture.external_id)
+        )
+
+    return bet
+
+
+@router.get("/leaderboard", response_model=list[LeaderboardEntry])
+def leaderboard(db: Session = Depends(get_db)):
+    entries: list[LeaderboardEntry] = []
+
+    # AI models
+    for model in _AI_MODELS:
+        rows = db.query(Prediction).filter(Prediction.model_name == model).all()
+        settled = [r for r in rows if r.status in ("won", "lost")]
+        won = sum(1 for r in settled if r.status == "won")
+        lost = len(settled) - won
+        total_pl = sum(r.profit_loss or 0.0 for r in settled)
+        total_staked = sum(r.stake for r in settled)
+        pending_staked = sum(r.stake for r in rows if r.status == "pending")
+        entries.append(LeaderboardEntry(
+            kind="ai",
+            name=model,
+            display_name=_AI_LABELS.get(model, model),
+            bankroll=round(INITIAL_BANKROLL + total_pl - pending_staked, 2),
+            total_bets=len(rows),
+            won=won,
+            lost=lost,
+            pending=sum(1 for r in rows if r.status == "pending"),
+            win_rate=round(won / len(settled), 3) if settled else 0.0,
+            roi=round(total_pl / total_staked, 3) if total_staked else 0.0,
+            total_profit_loss=round(total_pl, 2),
+        ))
+
+    # Users
+    for user in db.query(User).all():
+        rows = db.query(UserBet).filter(UserBet.user_id == user.id).all()
+        settled = [r for r in rows if r.status in ("won", "lost")]
+        won = sum(1 for r in settled if r.status == "won")
+        lost = len(settled) - won
+        total_pl = sum(r.profit_loss or 0.0 for r in settled)
+        total_staked = sum(r.stake for r in settled)
+        pending_staked = sum(r.stake for r in rows if r.status == "pending")
+        entries.append(LeaderboardEntry(
+            kind="user",
+            name=user.username,
+            display_name=user.username,
+            bankroll=round(INITIAL_BANKROLL + total_pl - pending_staked, 2),
+            total_bets=len(rows),
+            won=won,
+            lost=lost,
+            pending=sum(1 for r in rows if r.status == "pending"),
+            win_rate=round(won / len(settled), 3) if settled else 0.0,
+            roi=round(total_pl / total_staked, 3) if total_staked else 0.0,
+            total_profit_loss=round(total_pl, 2),
+        ))
+
+    return entries
+
+
+@router.get("/me/compare", response_model=CompareOut)
+def compare_me_to_ai(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    bets = (
+        db.query(UserBet)
+        .join(Fixture, Fixture.id == UserBet.fixture_id)
+        .filter(UserBet.user_id == user.id)
+        .order_by(Fixture.kickoff_at.desc())
+        .all()
+    )
+
+    entries: list[CompareEntry] = []
+    user_pl_total = 0.0
+    ai_pl_total = 0.0
+    ai_settled_count = 0
+    ai_won_count = 0
+    user_settled = 0
+    user_won = 0
+
+    for bet in bets:
+        fixture = db.query(Fixture).filter(Fixture.id == bet.fixture_id).first()
+        if not fixture:
+            continue
+        ai_preds = (
+            db.query(Prediction)
+            .filter(Prediction.fixture_id == bet.fixture_id)
+            .all()
+        )
+        entries.append(CompareEntry(
+            fixture_id=fixture.id,
+            home_team=fixture.home_team,
+            away_team=fixture.away_team,
+            league=fixture.league,
+            kickoff_at=fixture.kickoff_at,
+            result=fixture.result,
+            user_bet=UserBetOut.model_validate(bet),
+            ai_predictions=[PredictionOut.model_validate(p) for p in ai_preds],
+        ))
+
+        if bet.status in ("won", "lost"):
+            user_settled += 1
+            user_pl_total += bet.profit_loss or 0.0
+            if bet.status == "won":
+                user_won += 1
+        for p in ai_preds:
+            if p.status in ("won", "lost"):
+                ai_settled_count += 1
+                ai_pl_total += p.profit_loss or 0.0
+                if p.status == "won":
+                    ai_won_count += 1
+
+    summary = CompareSummary(
+        user_pl=round(user_pl_total, 2),
+        ai_pl=round(ai_pl_total / len(_AI_MODELS), 2) if entries else 0.0,
+        user_win_rate=round(user_won / user_settled, 3) if user_settled else 0.0,
+        ai_win_rate=round(ai_won_count / ai_settled_count, 3) if ai_settled_count else 0.0,
+        matches_bet=len(entries),
+    )
+    return CompareOut(summary=summary, entries=entries)

@@ -12,7 +12,7 @@ from app.config import settings
 
 _BASE_URL = "https://api.pulsescore.net/api/v2/bet365"
 _HEADERS = lambda: {"X-Secret": settings.pulsescore_api_key}
-_CACHE_TTL = 60  # seconds
+_CACHE_TTL = 300  # seconds
 
 # Map our league names (from API-Football) to PulseScore leagueName values
 _LEAGUE_MAP = {
@@ -21,6 +21,7 @@ _LEAGUE_MAP = {
     "Bundesliga": "Germany Bundesliga",
     "Ligue 1": "France Ligue 1",
     "Serie A": "Italy Serie A",
+    # The World Cup is a one-time thing, remove it entirely after the World Cup ends
     "World Cup": "World Cup 2026",
 }
 

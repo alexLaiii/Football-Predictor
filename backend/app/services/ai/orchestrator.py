@@ -1,8 +1,11 @@
 import asyncio
 import json
+import logging
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.models.fixture import Fixture
@@ -13,6 +16,7 @@ from app.services.ai.gpt5 import GPT5Predictor
 from app.services.ai.grok import GrokPredictor
 from app.services.ai.deepseek import DeepSeekPredictor
 from app.services.football_api import fetch_match_context
+from app.services.lineup_analyzer import analyze_lineups
 from app.services.odds_api import fetch_odds
 
 PREDICTORS = [
@@ -47,6 +51,9 @@ def _build_prompt_snapshot(fixture_dict: dict, match_context: dict, odds: dict, 
     data_lines.append(f"odds_draw: {odds['draw']:.2f}")
     data_lines.append(f"odds_away: {odds['away']:.2f}")
     for key, val in match_context.items():
+        if val is None:
+            data_lines.append(f"{key}: unavailable")
+            continue
         if isinstance(val, dict):
             for subkey, subval in val.items():
                 if subkey == "games":
@@ -55,6 +62,21 @@ def _build_prompt_snapshot(fixture_dict: dict, match_context: dict, odds: dict, 
         else:
             data_lines.append(f"{key}: {val}")
     return "\n".join(data_lines)
+
+
+def _log_user_message(fixture_dict: dict, match_context: dict, odds: dict) -> None:
+    """Log the exact user_message JSON that each AI model will receive."""
+    user_message = {
+        "match": f"{fixture_dict['home_team']} vs {fixture_dict['away_team']}",
+        "league": fixture_dict["league"],
+        "odds": {"home": odds["home"], "draw": odds["draw"], "away": odds["away"]},
+        "context": match_context,
+    }
+    logger.info(
+        "AI user_message for fixture %s:\n%s",
+        fixture_dict.get("external_id", "?"),
+        json.dumps(user_message, indent=2, ensure_ascii=False),
+    )
 
 
 async def run_single_prediction(
@@ -105,7 +127,7 @@ async def predict_all_in_background(
     Each model saves to DB as soon as it finishes — no waiting for slow models."""
     from app.database import SessionLocal
     try:
-        match_context, odds = await asyncio.gather(
+        match_context, odds, lineup_summary = await asyncio.gather(
             fetch_match_context(external_id),
             fetch_odds(
                 external_id,
@@ -113,7 +135,11 @@ async def predict_all_in_background(
                 away_team=fixture_dict["away_team"],
                 league=fixture_dict["league"],
             ),
+            analyze_lineups(external_id),
         )
+        if lineup_summary:
+            match_context["lineup_summary"] = lineup_summary
+        _log_user_message(fixture_dict, match_context, odds)
         prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, external_id)
 
         db = SessionLocal()
@@ -139,7 +165,7 @@ async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
         "league": fixture.league,
     }
 
-    match_context, odds = await asyncio.gather(
+    match_context, odds, lineup_summary = await asyncio.gather(
         fetch_match_context(fixture.external_id),
         fetch_odds(
             fixture.external_id,
@@ -147,8 +173,12 @@ async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
             away_team=fixture_dict["away_team"],
             league=fixture_dict["league"],
         ),
+        analyze_lineups(fixture.external_id),
     )
+    if lineup_summary:
+        match_context["lineup_summary"] = lineup_summary
 
+    _log_user_message(fixture_dict, match_context, odds)
     prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, fixture.external_id)
     bankrolls = {p.name: get_bankroll(p.name, db) for p in PREDICTORS}
 

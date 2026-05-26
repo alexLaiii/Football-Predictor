@@ -7,7 +7,7 @@ from app.schemas import ModelPerformance
 
 router = APIRouter(prefix="/performance", tags=["performance"])
 
-_MODELS = ["sirkim", "claude", "gpt5", "gemini", "grok", "deepseek"]
+_MODELS = ["claude", "gpt5", "gemini", "grok", "deepseek"]
 _INITIAL_BANKROLL = 20_000.0
 
 

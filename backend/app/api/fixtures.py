@@ -7,7 +7,8 @@ from app.database import get_db
 from app.models.fixture import Fixture
 from app.models.team import Team
 from app.schemas import FixtureOut, FixtureWithPredictions
-from app.services.football_api import fetch_upcoming_fixtures
+from app.services.football_api import fetch_lineup_available, fetch_lineup_details, fetch_upcoming_fixtures
+from app.services.odds_api import fetch_odds
 
 router = APIRouter(prefix="/fixtures", tags=["fixtures"])
 
@@ -38,6 +39,35 @@ def get_fixture(fixture_id: int, db: Session = Depends(get_db)):
     if not fixture:
         raise HTTPException(status_code=404, detail="Fixture not found")
     return fixture
+
+
+@router.get("/{fixture_id}/odds")
+async def get_fixture_odds(fixture_id: int, db: Session = Depends(get_db)):
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    return await fetch_odds(
+        fixture.external_id,
+        home_team=fixture.home_team,
+        away_team=fixture.away_team,
+        league=fixture.league,
+    )
+
+
+@router.get("/{fixture_id}/lineup-available")
+async def get_fixture_lineup_available(fixture_id: int, db: Session = Depends(get_db)):
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    return {"available": await fetch_lineup_available(fixture.external_id)}
+
+
+@router.get("/{fixture_id}/lineup")
+async def get_fixture_lineup(fixture_id: int, db: Session = Depends(get_db)):
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    return await fetch_lineup_details(fixture.external_id) or {"home": None, "away": None}
 
 
 @router.post("/sync", response_model=list[FixtureOut])

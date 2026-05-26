@@ -5,9 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 import app.models  # noqa: F401 — registers models with Base before create_all
-from app.api import fixtures, j_tracker, performance, predictions
+from app.api import auth, bets, fixtures, j_tracker, performance, predictions
 from app.config import settings
 from app.database import Base, engine
+from app.migrations import migrate_sirkim_to_user
 from app.scheduler.jobs import job_settle_matches, job_sync_fixtures
 
 scheduler = AsyncIOScheduler()
@@ -34,8 +35,9 @@ def _migrate():
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     _migrate()
+    migrate_sirkim_to_user()
     scheduler.add_job(job_sync_fixtures, "cron", day_of_week="mon", hour=6)
-    scheduler.add_job(job_settle_matches, "interval", hours=1)
+    scheduler.add_job(job_settle_matches, "interval", minutes=10)
     scheduler.start()
     yield
     scheduler.shutdown()
@@ -54,6 +56,8 @@ app.include_router(fixtures.router)
 app.include_router(predictions.router)
 app.include_router(performance.router)
 app.include_router(j_tracker.router)
+app.include_router(auth.router)
+app.include_router(bets.router)
 
 
 @app.get("/health")
