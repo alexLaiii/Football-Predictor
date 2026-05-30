@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import type { Prediction, Fixture } from "@/lib/api";
 import PredictionDetailModal from "@/components/PredictionDetailModal";
 
-const PREDICTORS: { key: string; label: string; color: string }[] = [
-  { key: "sirkim",   label: "Sir Kim",  color: "bg-yellow-500" },
-  { key: "claude",   label: "Claude",   color: "bg-violet-500" },
-  { key: "gpt5",     label: "ChatGPT",  color: "bg-green-500"  },
-  { key: "gemini",   label: "Gemini",   color: "bg-blue-500"   },
-  { key: "grok",     label: "Grok",     color: "bg-orange-500" },
-  { key: "deepseek", label: "DeepSeek", color: "bg-cyan-500"   },
+const PREDICTORS: { key: string; label: string; color: string; lottie?: string; size: string }[] = [
+  { key: "claude",   label: "Claude",   color: "bg-violet-500", lottie: "/animations/Claude.lottie",   size: "w-12 h-12" },
+  { key: "gpt5",     label: "ChatGPT",  color: "bg-green-500",  lottie: "/animations/ChatGPT.lottie",  size: "w-12 h-12" },
+  { key: "gemini",   label: "Gemini",   color: "bg-blue-500",   lottie: "/animations/Gemini.lottie",   size: "w-12 h-12" },
+  { key: "grok",     label: "Grok",     color: "bg-orange-500", lottie: "/animations/Grok.lottie",     size: "w-9 h-9"   },
+  { key: "deepseek", label: "DeepSeek", color: "bg-cyan-500",   lottie: "/animations/Deepseek.lottie", size: "w-9 h-9"   },
 ];
 
 const STATUS_STYLE: Record<string, string> = {
@@ -64,7 +64,12 @@ function PredictorSection({
         className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-wc-subtle transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${predictor.color}`} />
+          <div className="w-10 h-10 flex items-center justify-center shrink-0">
+            {predictor.lottie
+              ? <DotLottieReact src={predictor.lottie} loop autoplay className={predictor.size} />
+              : <span className={`h-2 w-2 rounded-full ${predictor.color}`} />
+            }
+          </div>
           <span className="text-sm font-semibold text-wc-ink">{predictor.label}</span>
           <span className="text-xs text-wc-muted">
             ({predictions.length} bet{predictions.length !== 1 ? "s" : ""})

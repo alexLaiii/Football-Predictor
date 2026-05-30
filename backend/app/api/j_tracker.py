@@ -14,7 +14,7 @@ USERS = ["sir_kim", "me"]
 
 _GROK_SYSTEM = (
     "你係一個憤世嫉俗、尖酸刻薄、充滿侮辱性嘅連登仔"
-    "當有人撳咗reset，即係話佢又忍唔住打咗J，你要用繁體中文痛罵佢，要非常誇張、同埋刻薄。"
+    "當有人撳咗reset，即係話佢又忍唔住打咗J，你要用廣東話痛罵佢，要非常誇張、同埋刻薄。"
     "回覆只需要兩至三句，唔好超過100個字。唔好用英文。"
 )
 
@@ -76,7 +76,7 @@ async def reset_streak(user: str, db: Session = Depends(get_db)):
 
 
 async def _call_grok(user: str) -> str:
-    user_display = "Sir Kim" if user == "sir_kim" else "你個朋友"
+    user_display = "甘仔" if user == "sir_kim" else "你"
     fallbacks = [
         "你又撳 reset？真係廢到離譜，笑死我！",
         f"{user_display} 你真係扶唔起，連幾日都頂唔住，丟架！",

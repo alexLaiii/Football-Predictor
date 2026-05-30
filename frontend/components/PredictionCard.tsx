@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { Prediction } from "@/lib/api";
 
 const MODEL_COLORS: Record<string, string> = {
-  sirkim:   "border-amber-200 bg-amber-50",
   claude:   "border-violet-200 bg-violet-50",
   gpt5:     "border-emerald-200 bg-emerald-50",
   gemini:   "border-blue-200 bg-blue-50",
@@ -13,7 +12,6 @@ const MODEL_COLORS: Record<string, string> = {
 };
 
 const MODEL_LABELS: Record<string, string> = {
-  sirkim:   "Sir Kim",
   claude:   "Claude",
   gpt5:     "ChatGPT",
   gemini:   "Gemini",
@@ -54,13 +52,12 @@ function ProbBar({ label, value, active, valueScore }: { label: string; value: n
 
 export default function PredictionCard({ prediction }: { prediction: Prediction }) {
   const [expanded, setExpanded] = useState(false);
-  const isSirKim = prediction.model_name === "sirkim";
   const colorClass = MODEL_COLORS[prediction.model_name] ?? "border-wc-border bg-white";
   const label = MODEL_LABELS[prediction.model_name] ?? prediction.model_name;
 
-  const homeProb = isSirKim ? (prediction.bet_on === "home" ? 1 : 0) : prediction.home_prob;
-  const drawProb = isSirKim ? (prediction.bet_on === "draw" ? 1 : 0) : prediction.draw_prob;
-  const awayProb = isSirKim ? (prediction.bet_on === "away" ? 1 : 0) : prediction.away_prob;
+  const homeProb = prediction.home_prob;
+  const drawProb = prediction.draw_prob;
+  const awayProb = prediction.away_prob;
 
   return (
     <div className={`rounded-xl border p-4 shadow-card ${colorClass}`}>
@@ -81,17 +78,15 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
       </div>
 
       <div className="space-y-1.5 mb-3">
-        <ProbBar label="Home" value={homeProb} active={prediction.bet_on === "home"} valueScore={isSirKim ? null : prediction.home_value_score} />
-        <ProbBar label="Draw" value={drawProb} active={prediction.bet_on === "draw"} valueScore={isSirKim ? null : prediction.draw_value_score} />
-        <ProbBar label="Away" value={awayProb} active={prediction.bet_on === "away"} valueScore={isSirKim ? null : prediction.away_value_score} />
+        <ProbBar label="Home" value={homeProb} active={prediction.bet_on === "home"} valueScore={prediction.home_value_score} />
+        <ProbBar label="Draw" value={drawProb} active={prediction.bet_on === "draw"} valueScore={prediction.draw_value_score} />
+        <ProbBar label="Away" value={awayProb} active={prediction.bet_on === "away"} valueScore={prediction.away_value_score} />
       </div>
 
       <div className="flex gap-4 text-xs text-wc-muted mb-3">
-        {!isSirKim && (
-          <div>
-            Confidence <span className="text-wc-ink">{(prediction.confidence * 100).toFixed(0)}%</span>
-          </div>
-        )}
+        <div>
+          Confidence <span className="text-wc-ink">{(prediction.confidence * 100).toFixed(0)}%</span>
+        </div>
         <div>
           EV <span className={prediction.expected_value >= 0 ? "text-emerald-600" : "text-red-600"}>
             {prediction.expected_value >= 0 ? "+" : ""}{prediction.expected_value.toFixed(3)}
@@ -115,11 +110,6 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
         </p>
       )}
 
-      {isSirKim && (
-        <p className="mt-3 text-center text-wc-gold text-sm tracking-widest border-t border-wc-border pt-3">
-          收收收收收收收
-        </p>
-      )}
     </div>
   );
 }

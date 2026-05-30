@@ -6,7 +6,7 @@ import random
 
 from openai import AsyncOpenAI
 
-from app.services.ai.base import BasePredictor, PredictionResult, random_probs
+from app.services.ai.base import BasePredictor, PredictionResult, build_user_message, random_probs
 
 SYSTEM_PROMPT = """You are a football match prediction analyst with a long-term profit mindset. Given match information and bookmaker odds, estimate true outcome probabilities and pick the single best relative value outcome.
 
@@ -83,12 +83,7 @@ class DeepSeekPredictor(BasePredictor):
                     api_key=settings.deepseek_api_key,
                     base_url="https://api.vectorengine.ai/v1",
                 )
-                user_message = (
-                    f"Match: {fixture['home_team']} vs {fixture['away_team']}\n"
-                    f"League: {fixture['league']}\n"
-                    f"Odds: Home={odds['home']:.2f}, Draw={odds['draw']:.2f}, Away={odds['away']:.2f}\n"
-                    f"Context: {json.dumps(match_context)}"
-                )
+                user_message = build_user_message(fixture, odds, match_context)
                 response = await client.chat.completions.create(
                     model="deepseek-r1",
                     messages=[

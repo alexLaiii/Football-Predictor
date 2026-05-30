@@ -1,13 +1,14 @@
 import { getFixture } from "@/lib/api";
 import PredictionCard from "@/components/PredictionCard";
 import PredictionsPoller from "@/components/PredictionsPoller";
-import SirKimForm from "@/components/SirKimForm";
+import UserBetForm from "@/components/UserBetForm";
 import TeamLogo from "@/components/TeamLogo";
 import MatchContextDebug from "@/components/MatchContextDebug";
+import LineupsSection from "@/components/LineupPitch";
 import Link from "next/link";
 import LocalTime from "@/components/LocalTime";
 
-const TOTAL_PREDICTIONS = 6; // sirkim + 5 AI models
+const TOTAL_AI_PREDICTIONS = 5;
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,6 +24,8 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       </div>
     );
   }
+
+  const aiPredictions = fixture.predictions.filter((p) => p.model_name !== "sirkim");
 
   return (
     <div>
@@ -49,35 +52,45 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {fixture.predictions.length === 0 ? (
-        <SirKimForm
-          fixtureId={fixture.id}
-          homeTeam={fixture.home_team}
-          awayTeam={fixture.away_team}
-          homeTeamCrest={fixture.home_team_crest}
-          awayTeamCrest={fixture.away_team_crest}
-        />
-      ) : (
-        <>
-          {fixture.predictions.length < TOTAL_PREDICTIONS && (
-            <>
-              <PredictionsPoller />
-              <p className="text-sm text-wc-muted animate-pulse mb-4">
-                AI models predicting… ({Math.max(0, fixture.predictions.length - 1)}/5 done)
-              </p>
-            </>
-          )}
+      <UserBetForm
+        fixtureId={fixture.id}
+        homeTeam={fixture.home_team}
+        awayTeam={fixture.away_team}
+        homeTeamCrest={fixture.home_team_crest}
+        awayTeamCrest={fixture.away_team_crest}
+      />
+
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold text-wc-ink mb-3">AI Predictions</h2>
+        {aiPredictions.length < TOTAL_AI_PREDICTIONS && (
+          <>
+            <PredictionsPoller />
+            <p className="text-sm text-wc-muted animate-pulse mb-4">
+              {aiPredictions.length === 0
+                ? "AI models predicting… (place a bet to trigger)"
+                : `AI models predicting… (${aiPredictions.length}/${TOTAL_AI_PREDICTIONS} done)`}
+            </p>
+          </>
+        )}
+        {aiPredictions.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {fixture.predictions.map((p) => (
+            {aiPredictions.map((p) => (
               <PredictionCard key={p.id} prediction={p} />
             ))}
           </div>
-        </>
+        )}
+      </div>
+
+      {aiPredictions.length > 0 && (
+        <MatchContextDebug predictions={aiPredictions} />
       )}
 
-      {fixture.predictions.length > 0 && (
-        <MatchContextDebug predictions={fixture.predictions} />
-      )}
+      <LineupsSection
+        fixtureId={fixture.id}
+        homeTeam={fixture.home_team}
+        awayTeam={fixture.away_team}
+        kickoffAt={fixture.kickoff_at}
+      />
     </div>
   );
 }

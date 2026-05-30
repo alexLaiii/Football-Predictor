@@ -3,9 +3,87 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getFixtures, syncFixtures, type Fixture } from "@/lib/api";
+import { getFixtures, getLineupAvailable, syncFixtures, type Fixture } from "@/lib/api";
 import TeamLogo from "@/components/TeamLogo";
 import RouteLoading from "@/components/RouteLoading";
+
+const LINEUP_CHECK_MINUTES = [40, 35, 30, 25, 20, 15, 10, 5, 1];
+
+function MatchRow({ fixture: f }: { fixture: Fixture }) {
+  const lineupOut = useLineupAvailable(f.id, f.kickoff_at);
+  return (
+    <div className="bg-white px-4 py-3 flex items-center justify-between gap-4 hover:bg-wc-subtle transition-colors">
+      <div className="min-w-0 flex items-center gap-2">
+        <TeamLogo src={f.home_team_crest} alt={f.home_team} className="w-6 h-6" />
+        <div className="min-w-0">
+          <div className="font-semibold text-wc-ink flex items-center gap-2 flex-wrap">
+            <span>{f.home_team} vs {f.away_team}</span>
+          </div>
+          <div className="text-xs text-wc-muted mt-0.5">{formatDate(f.kickoff_at)}</div>
+        </div>
+        <TeamLogo src={f.away_team_crest} alt={f.away_team} className="w-6 h-6" />
+            {lineupOut && (
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                Starting XI Out
+              </span>
+            )}
+      </div>
+      <Link
+        href={`/matches/${f.id}`}
+        className="rounded-lg border border-wc-border px-3 py-1.5 text-xs text-wc-muted hover:text-wc-ink hover:border-slate-300 transition-colors shrink-0"
+      >
+        View / Predict
+      </Link>
+    </div>
+  );
+}
+
+function useLineupAvailable(fixtureId: number, kickoffAt: string): boolean {
+  const [available, setAvailable] = useState(false);
+
+  useEffect(() => {
+    if (!kickoffAt) return;
+    const kickoffMs = new Date(kickoffAt).getTime();
+    if (isNaN(kickoffMs)) return;
+
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    async function check() {
+      if (cancelled) return;
+      try {
+        const ok = await getLineupAvailable(fixtureId);
+        if (cancelled) return;
+        if (ok) {
+          setAvailable(true);
+          timeouts.forEach(clearTimeout);
+        }
+      } catch { /* fail-safe: keep badge hidden */ }
+    }
+
+    const now = Date.now();
+    const minutesToKickoff = (kickoffMs - now) / 60000;
+
+    // Already past kickoff: nothing to do.
+    if (minutesToKickoff <= 0) return;
+
+    // If already inside the 40-min window on mount, fire an immediate check.
+    // Otherwise the loop below schedules a wake-up at the 40-min mark.
+    if (minutesToKickoff <= 40) check();
+
+    for (const min of LINEUP_CHECK_MINUTES) {
+      const delay = kickoffMs - min * 60000 - now;
+      if (delay > 0) timeouts.push(setTimeout(check, delay));
+    }
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach(clearTimeout);
+    };
+  }, [fixtureId, kickoffAt]);
+
+  return available;
+}
 
 const LEAGUE_ORDER = [
   "World Cup",
@@ -96,16 +174,16 @@ export default function MatchesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-xs text-wc-gold uppercase tracking-widest mb-1">Top 5 Euro League & FIFA World Cup 2026</p>
           <h1 className="text-3xl font-bold text-wc-ink tracking-tight">Matches</h1>
-          <p className="mt-2 text-wc-muted">Click a match to submit Sir Kim&apos;s prediction and AI will predict the same match. (Ideally, make predictions at least <span className="font-semibold text-wc-ink">30 minutes</span> before kick-off, when the Starting XI is released.)</p>
+          <p className="mt-2 text-wc-muted">Click a match to place your bet and the AI models will predict the same match. (Ideally, place your bet at least <span className="font-semibold text-wc-ink">30 minutes</span> before kick-off, and the Starting XI is available.)</p>
         </div>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="rounded-lg bg-wc-ink px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+          className="shrink-0 rounded-lg bg-wc-ink px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
         >
           {syncing ? "Syncing…" : "Sync Fixtures"}
         </button>
@@ -141,29 +219,7 @@ export default function MatchesPage() {
                 {isOpen && (
                   <div className="divide-y divide-wc-border border-t border-wc-border">
                     {groups[league].map((f) => (
-                      <div
-                        key={f.id}
-                        className="bg-white px-4 py-3 flex items-center justify-between gap-4 hover:bg-wc-subtle transition-colors"
-                      >
-                        <div className="min-w-0 flex items-center gap-2">
-                          <TeamLogo src={f.home_team_crest} alt={f.home_team} className="w-6 h-6" />
-                          <div>
-                            <div className="font-semibold text-wc-ink">
-                              {f.home_team} vs {f.away_team}
-                            </div>
-                            <div className="text-xs text-wc-muted mt-0.5">
-                              {formatDate(f.kickoff_at)}
-                            </div>
-                          </div>
-                          <TeamLogo src={f.away_team_crest} alt={f.away_team} className="w-6 h-6" />
-                        </div>
-                        <Link
-                          href={`/matches/${f.id}`}
-                          className="rounded-lg border border-wc-border px-3 py-1.5 text-xs text-wc-muted hover:text-wc-ink hover:border-slate-300 transition-colors shrink-0"
-                        >
-                          View / Predict
-                        </Link>
-                      </div>
+                      <MatchRow key={f.id} fixture={f} />
                     ))}
                   </div>
                 )}

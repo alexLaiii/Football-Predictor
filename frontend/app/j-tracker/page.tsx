@@ -1,10 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { getJTracker, resetJStreak, type JTrackerData, type JUserData } from "@/lib/api";
 
+function getPlanetSrc(streak: number): string {
+  if (streak >= 20) return "/animations/stage_6.png";
+  if (streak >= 15) return "/animations/stage_5.svg";
+  if (streak >= 10) return "/animations/stage_4.lottie";
+  if (streak >= 7)  return "/animations/stage_3.lottie";
+  if (streak >= 4)  return "/animations/stage_2.lottie";
+  if (streak >= 3)  return "/animations/stage_1.lottie";
+  return "/animations/stage_0.lottie";
+}
+
+function PlanetAnimation({ src, className }: { src: string; className: string }) {
+  if (src.endsWith(".svg") || src.endsWith(".png")) {
+    return <img src={src} alt="planet" className={className} />;
+  }
+  return <DotLottieReact src={src} loop autoplay className={className} />;
+}
+
 const START_DATE = "2026-05-20";
-const USER_LABELS: Record<string, string> = { sir_kim: "Sir Kim", me: "Me" };
+const USER_LABELS: Record<string, string> = { sir_kim: "甘仔", me: "Me" };
 const USER_COLOR: Record<string, { tick: string; reset: string; badge: string }> = {
   sir_kim: { tick: "text-blue-600",    reset: "text-red-600",  badge: "bg-blue-50 text-blue-700 border-blue-200" },
   me:      { tick: "text-emerald-600", reset: "text-red-600",  badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -75,7 +93,7 @@ export default function JTrackerPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-wc-ink">Days Without Hitting J</h1>
+        <h1 className="text-3xl font-bold text-wc-ink">Days No J</h1>
         <p className="text-wc-muted mt-1 text-sm">Stay strong. Don&apos;t hit J.</p>
       </div>
 
@@ -91,6 +109,9 @@ export default function JTrackerPage() {
                   {USER_LABELS[user]}
                 </span>
               </div>
+              <div className="flex justify-center">
+                <PlanetAnimation src={getPlanetSrc(ud.current_streak)} className="w-34 h-34" />
+              </div>
               <div>
                 <span className="text-4xl font-bold text-wc-ink">{ud.current_streak}</span>
                 <span className="text-sm text-wc-muted ml-1">days clean</span>
@@ -104,7 +125,7 @@ export default function JTrackerPage() {
                 disabled={resetting[user]}
                 className="w-full rounded-lg bg-wc-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {resetting[user] ? "Resetting…" : "I hit J 😔"}
+                {resetting[user] ? "Resetting…" : "我打左 😔"}
               </button>
             </div>
           );
@@ -189,9 +210,9 @@ export default function JTrackerPage() {
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4 text-xs text-wc-muted border-t border-wc-border pt-3">
-          <span><span className="text-blue-600 font-bold">✓</span> Sir Kim clean</span>
+          <span><span className="text-blue-600 font-bold">✓</span> 甘仔 clean</span>
           <span><span className="text-emerald-600 font-bold">✓</span> Me clean</span>
-          <span><span className="text-red-600 font-bold">✗</span> Reset</span>
+          <span><span className="text-red-600 font-bold">✗</span> 打左</span>
         </div>
       </div>
 

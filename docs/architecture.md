@@ -24,7 +24,6 @@ High-level shape of the system: what talks to what, where data lives, and which 
                                                 │  Routers:                    │
                                                 │    /fixtures /predictions    │
                                                 │    /bets /auth /performance  │
-                                                │    /j-tracker                │
                                                 │                              │
                                                 │  In-process:                 │
                                                 │    APScheduler (sync, settle)│
@@ -37,10 +36,10 @@ High-level shape of the system: what talks to what, where data lives, and which 
               ┌──────────────────────────┐                              ┌─────────────────────────────┐
               │  PostgreSQL (Neon)       │                              │  External APIs              │
               │                          │                              │                             │
-              │  teams, fixtures,        │                              │  API-Football  (v3)         │
-              │  predictions, user_bets, │                              │    fixtures, results,       │
-              │  users, j_streaks,       │                              │    standings, h2h,          │
-              │  j_resets                │                              │    lineups, injuries,       │
+              │  teams, team_elo,        │                              │  API-Football  (v3)         │
+              │  fixtures, predictions,  │                              │    fixtures, results,       │
+              │  user_bets, users        │                              │    standings, h2h,          │
+              │                          │                              │    lineups, injuries,       │
               └──────────────────────────┘                              │    venues                   │
                                                                         │                             │
                                                                         │  PulseScore (Bet365 odds)   │
@@ -97,7 +96,6 @@ Each router file owns one prefix and a tag:
 | `/bets` | [api/bets.py](../backend/app/api/bets.py) | User bet placement, my bets, my bankroll, leaderboard, compare-me-to-AI. |
 | `/auth` | [api/auth.py](../backend/app/api/auth.py) | Register, login, `GET /auth/me`. |
 | `/performance` | [api/performance.py](../backend/app/api/performance.py) | Per-AI-model performance stats (legacy view; the unified leaderboard is in `/bets`). |
-| `/j-tracker` | [api/j_tracker.py](../backend/app/api/j_tracker.py) | Internal joke tracker — safe to ignore. |
 
 ### Models
 
@@ -114,6 +112,7 @@ User ────< UserBet >───── Fixture ─────< Prediction
 - **Prediction** = one AI model's bet on one fixture. `model_name` ∈ {claude, gpt5, gemini, grok, deepseek}.
 - **UserBet** = one user's bet on one fixture. Enforced unique on `(user_id, fixture_id)` via `uq_user_fixture` so users can't bet twice on the same match.
 - **User.token** is an opaque 32-byte URL-safe token, NOT a JWT. Stored in plain text in the column; sent as `Authorization: Bearer <token>`.
+- **TeamElo** is a standalone lookup table (keyed by API-Football `team_id`) holding each national team's Elo rating and FIFA world ranking (`elo` / `fifa_rank`, both nullable). Populated manually; read only for World Cup fixtures, where the orchestrator injects the values into match context. See [prediction-flow.md](prediction-flow.md#world-cup-matches-elo-fifa-ranking-and-extra-rules).
 
 ### Services layer
 
@@ -144,7 +143,8 @@ Currently no Alembic. On every startup [main.py](../backend/app/main.py):
 
 1. Calls `Base.metadata.create_all(bind=engine)` → creates missing tables.
 2. Runs a few hand-coded `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for older deployments.
-3. Calls `migrate_sirkim_to_user()` → idempotent, gated on whether the `Sir Kim` user already exists.
+
+Note: `create_all` only creates missing *tables*, never adds columns to a table that already exists. New columns on an existing table need a manual `ALTER` (or drop the table so it's recreated).
 
 This is fine while we're solo, but the moment two engineers work in parallel we'll regret it. Bringing in Alembic is on the list.
 

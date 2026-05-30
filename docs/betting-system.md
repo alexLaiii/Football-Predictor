@@ -139,26 +139,11 @@ Lightweight on purpose. No JWT, no sessions, no refresh tokens.
 
 This is fine for a low-stakes fake-money app but is **not what you'd ship for real-money betting**. For that you'd want token rotation, expiry, refresh, and HttpOnly cookies.
 
-## The Sir Kim migration
+## The Sir Kim migration (historical)
 
-Background: this app started with a single hardcoded "Sir Kim" bettor stored as a `Prediction` row with `model_name = "sirkim"`. When user accounts were introduced, we migrated him into a real user.
+The app originally had a single hardcoded "Sir Kim" bettor stored as `Prediction` rows with `model_name = "sirkim"`. When user accounts were added, a one-time startup migration copied his predictions into a real `User` + `UserBet` rows and deleted the `sirkim` predictions.
 
-[migrations.py](../backend/app/migrations.py):
-
-```python
-def migrate_sirkim_to_user():
-    if User.username == "Sir Kim" exists:
-        return  # already migrated
-    
-    create User("Sir Kim", password="abc")
-    for each Prediction where model_name == "sirkim":
-        copy → UserBet (same fixture, bet_on, stake, odds, status, profit_loss, ...)
-    delete all sirkim Predictions
-```
-
-Runs on every startup but is gated by the existence check, so it's idempotent.
-
-If you blow away Sir Kim from `users` (e.g. to test the migration again), the next startup recreates him with empty bet history (because the sirkim Predictions were already deleted). To get back the original history you'd need to restore from a DB backup.
+That migration (`migrations.py` / `migrate_sirkim_to_user()`) has since been **removed from the codebase** — the `sirkim` rows are long gone, so it no longer runs. Sir Kim now exists purely as an ordinary user with no special handling in the code. This note is kept only to explain why a "Sir Kim" user exists.
 
 ## Common changes and where they live
 

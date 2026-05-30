@@ -116,8 +116,7 @@ Postgres serverless. Pooled connection string lives only in Railway's env vars a
 1. On every backend startup, [main.py](../backend/app/main.py) runs:
    - `Base.metadata.create_all(bind=engine)` — creates missing tables.
    - A small block of `ALTER TABLE IF NOT EXISTS ADD COLUMN ...` for older deployments (team FK columns and `teams.crest`).
-   - `migrate_sirkim_to_user()` — idempotent data migration; see [betting-system.md](betting-system.md#the-sir-kim-migration).
-2. SQLAlchemy will **not** drop or alter existing columns. If you remove a column from a model, it stays in the DB until manually dropped.
+2. SQLAlchemy will **not** drop or alter existing columns, and `create_all` does **not** add new columns to a table that already exists. If you add a column to a model whose table already exists, add it by hand (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`) or drop the table so it's recreated.
 3. Renaming columns or changing types requires a manual `ALTER TABLE` against the Neon instance.
 
 This is fine while we're one engineer. The moment we're two, bring in Alembic.

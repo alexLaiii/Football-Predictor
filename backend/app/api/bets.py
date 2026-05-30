@@ -135,6 +135,8 @@ async def place_bet(
             "external_id": fixture.external_id,
             "home_team": fixture.home_team,
             "away_team": fixture.away_team,
+            "home_team_id": fixture.home_team_id,
+            "away_team_id": fixture.away_team_id,
             "league": fixture.league,
         }
         asyncio.create_task(

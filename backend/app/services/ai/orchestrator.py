@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 from app.config import settings
 from app.models.fixture import Fixture
 from app.models.prediction import Prediction
+from app.models.team_elo import TeamElo
 from app.services.ai.claude import ClaudePredictor
 from app.services.ai.gemini import GeminiPredictor
 from app.services.ai.gpt5 import GPT5Predictor
@@ -39,6 +40,25 @@ def get_bankroll(model_name: str, db: Session) -> float:
         Prediction.status == "pending",
     ).scalar()
     return INITIAL_BANKROLL + float(settled_pl) - float(pending_stakes)
+
+
+def _inject_team_ratings(match_context: dict, fixture_dict: dict, db: Session) -> None:
+    """For World Cup fixtures, add home/away Elo and FIFA ranking from the team_elo table
+    when available. Skips silently if the league isn't World Cup or the value is missing, so
+    predictors fall back to their own judgement of squad strength."""
+    if fixture_dict.get("league") != "World Cup":
+        return
+    for side in ("home", "away"):
+        team_id = fixture_dict.get(f"{side}_team_id")
+        if not team_id:
+            continue
+        row = db.query(TeamElo).filter(TeamElo.team_id == team_id).first()
+        if not row:
+            continue
+        if row.elo is not None:
+            match_context[f"{side}_elo"] = row.elo
+        if row.fifa_rank is not None:
+            match_context[f"{side}_fifa_rank"] = row.fifa_rank
 
 
 def _build_prompt_snapshot(fixture_dict: dict, match_context: dict, odds: dict, external_id: str) -> str:
@@ -139,14 +159,16 @@ async def predict_all_in_background(
         )
         if lineup_summary:
             match_context["lineup_summary"] = lineup_summary
-        _log_user_message(fixture_dict, match_context, odds)
-        prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, external_id)
 
         db = SessionLocal()
         try:
+            _inject_team_ratings(match_context, fixture_dict, db)
             bankrolls = {p.name: get_bankroll(p.name, db) for p in PREDICTORS}
         finally:
             db.close()
+
+        _log_user_message(fixture_dict, match_context, odds)
+        prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, external_id)
 
         await asyncio.gather(*[
             run_single_prediction(p, fixture_id, fixture_dict, match_context, odds, bankrolls[p.name], prompt_snapshot)
@@ -162,6 +184,8 @@ async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
         "external_id": fixture.external_id,
         "home_team": fixture.home_team,
         "away_team": fixture.away_team,
+        "home_team_id": fixture.home_team_id,
+        "away_team_id": fixture.away_team_id,
         "league": fixture.league,
     }
 
@@ -178,6 +202,7 @@ async def run_predictions(fixture: Fixture, db: Session) -> list[Prediction]:
     if lineup_summary:
         match_context["lineup_summary"] = lineup_summary
 
+    _inject_team_ratings(match_context, fixture_dict, db)
     _log_user_message(fixture_dict, match_context, odds)
     prompt_snapshot = _build_prompt_snapshot(fixture_dict, match_context, odds, fixture.external_id)
     bankrolls = {p.name: get_bankroll(p.name, db) for p in PREDICTORS}

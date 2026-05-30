@@ -4,18 +4,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Pyramid, LandPlot, History, HandFist } from "lucide-react";
+import { Pyramid, LandPlot, History, HandFist, BarChart3, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import AuthModal from "@/components/AuthModal";
 const NAV_LINKS = [
-  { href: "/",          label: "Leaderboard", icon: Pyramid },
-  { href: "/matches",   label: "Matches",     icon: LandPlot },
-  { href: "/history",   label: "History",     icon: History },
-  { href: "/j-tracker", label: "J Tracker",   icon: HandFist},
+  { href: "/",          label: "Leaderboard",     icon: Pyramid },
+  { href: "/matches",   label: "Matches",         icon: LandPlot },
+  { href: "/history",   label: "AI History",      icon: History },
+  { href: "/compare",   label: "Compare Me to AI", icon: BarChart3 },
+  { href: "/j-tracker", label: "J Tracker",       icon: HandFist },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed");
@@ -38,8 +43,8 @@ export default function Navbar() {
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-wc-border flex items-center justify-between px-4 h-14">
         <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
-          <Image src="/logo.png" alt="logo" width={28} height={28} className="object-contain" />
-          <span className="text-sm font-semibold text-wc-ink">Kim vs AI</span>
+          <Image src="/logo.png" alt="logo" width={46} height={46} className="object-contain" />
+          <span className="text-sm font-semibold text-wc-ink">Can AI win bets</span>
         </Link>
         <button
           onClick={() => setMobileOpen((o) => !o)}
@@ -75,6 +80,25 @@ export default function Navbar() {
               </Link>
             );
           })}
+          <div className="border-t border-wc-border mt-2 pt-2">
+            {user ? (
+              <button
+                onClick={() => { logout(); setMobileOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-wc-muted hover:bg-wc-subtle hover:text-wc-ink"
+              >
+                <LogOut className="w-5 h-5 shrink-0" aria-hidden />
+                <span className="truncate">Log out ({user.username})</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => { setAuthOpen(true); setMobileOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-wc-muted hover:bg-wc-subtle hover:text-wc-ink"
+              >
+                <LogIn className="w-5 h-5 shrink-0" aria-hidden />
+                <span>Log in / Sign up</span>
+              </button>
+            )}
+          </div>
         </nav>
       </div>
 
@@ -89,10 +113,10 @@ export default function Navbar() {
             collapsed ? "justify-center px-0" : "gap-3 px-4"
           }`}
         >
-          <Image src="/logo.png" alt="logo" width={32} height={32} className="object-contain shrink-0" />
+          <Image src="/logo.png" alt="logo" width={52} height={52} className="object-contain shrink-0" />
           {!collapsed && (
             <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-sm font-bold text-wc-ink truncate">Kim vs AI</span>
+              <span className="text-sm font-bold text-wc-ink truncate">Can AI win bets</span>
               <span className="text-[10px] text-wc-gold uppercase tracking-widest">World Cup 2026</span>
             </div>
           )}
@@ -124,6 +148,33 @@ export default function Navbar() {
           </ul>
         </nav>
 
+        {/* Auth footer */}
+        <div className="border-t border-wc-border px-2 py-3">
+          {user ? (
+            <button
+              onClick={logout}
+              title={collapsed ? `Log out (${user.username})` : undefined}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-wc-muted hover:bg-wc-subtle hover:text-wc-ink transition-colors ${
+                collapsed ? "justify-center" : ""
+              }`}
+            >
+              <LogOut className="w-5 h-5 shrink-0" aria-hidden />
+              {!collapsed && <span className="truncate">{user.username}</span>}
+            </button>
+          ) : (
+            <button
+              onClick={() => setAuthOpen(true)}
+              title={collapsed ? "Log in / Sign up" : undefined}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-wc-muted hover:bg-wc-subtle hover:text-wc-ink transition-colors ${
+                collapsed ? "justify-center" : ""
+              }`}
+            >
+              <LogIn className="w-5 h-5 shrink-0" aria-hidden />
+              {!collapsed && <span className="truncate">Log in / Sign up</span>}
+            </button>
+          )}
+        </div>
+
         {/* Edge fold-toggle: small circular button on the right border */}
         <button
           type="button"
@@ -145,6 +196,8 @@ export default function Navbar() {
           </svg>
         </button>
       </aside>
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

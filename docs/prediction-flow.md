@@ -47,7 +47,7 @@ class PredictionResult:
     draw_prob: float
     away_prob: float
     bet_on: str             # "home" | "draw" | "away"
-    confidence: float       # 0.50–0.95
+    confidence: float       # 0.35–0.95
     expected_value: float   # prob × odds − 1
     stake: float            # quarter-Kelly, see below
     odds: float             # the odds for the chosen outcome at bet time
@@ -147,6 +147,15 @@ else:
 ```
 
 Round name (`"Final"`, `"Group Stage - 1"`, etc.) is intentionally **not** part of the decision. A Bundesliga playoff final at Paderborn's own ground is not neutral; the Champions League final at Puskas Arena is. When `neutral_venue = True`, the venue-specific stats (`home_last5_home`, `away_last5_away` and their `_goals_avg_` siblings) are excluded from the payload so the AI doesn't apply non-existent home advantage.
+
+### World Cup matches: Elo, FIFA ranking, and extra rules
+
+For fixtures where `league == "World Cup"`, two extra things happen on top of the normal context:
+
+1. **Team ratings injected.** `_inject_team_ratings` in [orchestrator.py](../backend/app/services/ai/orchestrator.py) looks each team up in the `team_elo` table by API-Football `team_id` and adds `home_elo` / `away_elo` and `home_fifa_rank` / `away_fifa_rank` to the context (each only when a value is present). The table is populated manually; missing teams/values are skipped silently, and the predictors fall back to their own sense of squad strength.
+2. **WC-specific rules appended.** `build_user_message` in [ai/base.py](../backend/app/services/ai/base.py) appends a block of World Cup reasoning rules to the user message — treat friendlies carefully, group-stage incentives, Matchday 3 rotation risk, no club-style home advantage, prioritize long-term strength (Elo higher = stronger, FIFA rank lower = stronger), and an approximate weighting guide.
+
+Both are gated on the **same** `league == "World Cup"` check, so non-World-Cup predictions receive neither the ratings nor the rules. Note the rules block is part of the `user_message`, not the stored `prompt_snapshot` (which records only the input data — including the injected `*_elo` / `*_fifa_rank` values).
 
 ## Lineup analyzer
 

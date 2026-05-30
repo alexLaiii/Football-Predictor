@@ -75,7 +75,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Backend now serves on http://localhost:8000. On first boot, SQLAlchemy creates all tables and runs [migrations.py](../backend/app/migrations.py).
+Backend now serves on http://localhost:8000. On first boot, SQLAlchemy creates all tables (`Base.metadata.create_all`) plus a couple of additive `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements in [main.py](../backend/app/main.py).
 
 Sanity check: open http://localhost:8000/health → `{"status":"ok"}` and http://localhost:8000/docs for the auto-generated Swagger UI.
 
@@ -101,7 +101,7 @@ Worth remembering even before you read architecture.md:
 
 ```
 backend/app/
-  api/           # FastAPI routers: fixtures, predictions, bets, auth, performance, j_tracker
+  api/           # FastAPI routers: fixtures, predictions, bets, auth, performance
   models/        # SQLAlchemy ORM models — one file per table
   services/
     ai/          # One predictor per model + orchestrator that fans out
@@ -110,11 +110,10 @@ backend/app/
     lineup_analyzer.py # Pulls startXI + tags missing regulars, summarises via Haiku
     auth.py            # bcrypt + opaque token helpers
   scheduler/jobs.py    # APScheduler tasks: weekly fixture sync, 10-min settlement
-  main.py        # FastAPI app, scheduler bootstrap, CORS, migrations
+  main.py        # FastAPI app, scheduler bootstrap, CORS, schema bootstrap
   database.py    # Engine + Base + get_db dependency
   schemas.py     # Pydantic request/response models
   config.py      # pydantic-settings, reads .env
-  migrations.py  # One-shot data migrations run at startup
 
 frontend/
   app/           # Next.js App Router pages
@@ -122,7 +121,6 @@ frontend/
     matches/           # Fixture list + detail
     history/           # AI bet history
     compare/           # "Compare Me to AI" — user vs AI on same matches
-    j-tracker/         # Internal joke feature, ignore
   components/    # React components (PredictionCard, UserBetForm, etc.)
   lib/
     api.ts       # Single file: every backend HTTP call lives here
@@ -133,7 +131,7 @@ frontend/
 
 - **Bets and predictions are settled by a scheduler**, not the request that creates them. If you change the schema or settlement math, also re-read [betting-system.md](betting-system.md) and check [`scheduler/jobs.py`](../backend/app/scheduler/jobs.py).
 - **Every AI service has a `_mock` path** — disable the real key to develop offline without burning tokens.
-- **`migrate_sirkim_to_user()` runs on every boot** but is gated by checking if the `Sir Kim` user exists, so it's idempotent. Don't add new migrations to it; pull them into a proper migration tool if you need versioned schema changes.
+- **No data migrations run at startup** — only schema creation. (An earlier one-time "Sir Kim" data migration has been removed from the codebase; see [betting-system.md](betting-system.md#the-sir-kim-migration-historical).)
 - **No Alembic.** Schema is currently maintained by `Base.metadata.create_all()` plus a couple of `ALTER TABLE IF NOT EXISTS` lines in [`main.py`](../backend/app/main.py). For breaking changes in production, talk to whoever owns the Neon instance.
 
 ## When you get stuck

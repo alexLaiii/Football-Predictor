@@ -1,5 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+function authHeaders(token: string | null): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export type Fixture = {
   id: number;
   external_id: string;
@@ -42,18 +46,6 @@ export type Prediction = {
 
 export type FixtureWithPredictions = Fixture & { predictions: Prediction[] };
 
-export type ModelPerformance = {
-  model_name: string;
-  bankroll: number;
-  total_bets: number;
-  won: number;
-  lost: number;
-  pending: number;
-  win_rate: number;
-  roi: number;
-  total_profit_loss: number;
-};
-
 export async function getFixtures(): Promise<Fixture[]> {
   try {
     const res = await fetch(`${API_URL}/fixtures/`, { cache: "no-store" });
@@ -65,6 +57,56 @@ export async function getFixtures(): Promise<Fixture[]> {
 export async function getFixture(id: number): Promise<FixtureWithPredictions | null> {
   try {
     const res = await fetch(`${API_URL}/fixtures/${id}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+export type Odds = {
+  home: number;
+  draw: number;
+  away: number;
+  kickoff_at: string | null;
+};
+
+export async function getOdds(fixtureId: number): Promise<Odds | null> {
+  try {
+    const res = await fetch(`${API_URL}/fixtures/${fixtureId}/odds`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+export async function getLineupAvailable(fixtureId: number): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/fixtures/${fixtureId}/lineup-available`, { cache: "no-store" });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Boolean(data?.available);
+  } catch { return false; }
+}
+
+export type LineupPlayer = {
+  name: string;
+  number: number | null;
+  pos: string;
+  grid: string | null;
+};
+
+export type TeamLineup = {
+  team: string;
+  formation: string;
+  players: LineupPlayer[];
+};
+
+export type LineupDetails = {
+  home: TeamLineup | null;
+  away: TeamLineup | null;
+};
+
+export async function getLineupDetails(fixtureId: number): Promise<LineupDetails | null> {
+  try {
+    const res = await fetch(`${API_URL}/fixtures/${fixtureId}/lineup`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch { return null; }
@@ -98,32 +140,6 @@ export async function getAllFixtures(): Promise<Fixture[]> {
   } catch { return []; }
 }
 
-export type SirKimInput = {
-  bet_on: "home" | "draw" | "away";
-  stake: number;
-};
-
-export async function submitSirKimPrediction(
-  fixtureId: number,
-  data: SirKimInput,
-): Promise<Prediction[]> {
-  const res = await fetch(`${API_URL}/predictions/sirkim/${fixtureId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-export async function getPerformance(): Promise<ModelPerformance[]> {
-  try {
-    const res = await fetch(`${API_URL}/performance/`, { cache: "no-store" });
-    if (!res.ok) return [];
-    return res.json();
-  } catch { return []; }
-}
-
 export type JUserData = {
   current_streak: number;
   longest_streak: number;
@@ -148,5 +164,160 @@ export async function resetJStreak(user: string): Promise<{ grok_response: strin
   const res = await fetch(`${API_URL}/j-tracker/${user}/reset`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+// ───── Auth / User bets ─────
+
+export type AuthUser = { id: number; username: string };
+export type AuthResult = { token: string; user: AuthUser };
+
+export async function registerUser(username: string, password: string): Promise<AuthResult> {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail ?? "Registration failed");
+  return res.json();
+}
+
+export async function loginUser(username: string, password: string): Promise<AuthResult> {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail ?? "Login failed");
+  return res.json();
+}
+
+export async function getMe(token: string): Promise<AuthUser | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+export type UserBet = {
+  id: number;
+  user_id: number;
+  fixture_id: number;
+  bet_on: "home" | "draw" | "away";
+  stake: number;
+  odds: number;
+  status: "pending" | "won" | "lost" | "void";
+  profit_loss: number | null;
+  settled_at: string | null;
+  created_at: string;
+};
+
+export type LeaderboardEntry = {
+  kind: "ai" | "user";
+  name: string;
+  display_name: string;
+  bankroll: number;
+  total_bets: number;
+  won: number;
+  lost: number;
+  pending: number;
+  win_rate: number;
+  roi: number;
+  total_profit_loss: number;
+};
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  try {
+    const res = await fetch(`${API_URL}/bets/leaderboard`, { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
+  } catch { return []; }
+}
+
+export async function getMyBankroll(token: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${API_URL}/bets/me/bankroll`, {
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.bankroll;
+  } catch { return null; }
+}
+
+export async function getMyBets(token: string): Promise<UserBet[]> {
+  try {
+    const res = await fetch(`${API_URL}/bets/me`, {
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch { return []; }
+}
+
+export async function getMyBetForFixture(
+  token: string,
+  fixtureId: number,
+): Promise<UserBet | null> {
+  try {
+    const res = await fetch(`${API_URL}/bets/me/by-fixture/${fixtureId}`, {
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+export async function placeUserBet(
+  token: string,
+  fixtureId: number,
+  bet_on: "home" | "draw" | "away",
+  stake: number,
+): Promise<UserBet> {
+  const res = await fetch(`${API_URL}/bets/${fixtureId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ bet_on, stake }),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail ?? "Bet failed");
+  return res.json();
+}
+
+export type CompareEntry = {
+  fixture_id: number;
+  home_team: string;
+  away_team: string;
+  league: string;
+  kickoff_at: string;
+  result: "home" | "draw" | "away" | null;
+  user_bet: UserBet;
+  ai_predictions: Prediction[];
+};
+
+export type CompareSummary = {
+  user_pl: number;
+  ai_pl: number;
+  user_win_rate: number;
+  ai_win_rate: number;
+  matches_bet: number;
+};
+
+export type CompareData = { summary: CompareSummary; entries: CompareEntry[] };
+
+export async function getCompare(token: string): Promise<CompareData | null> {
+  try {
+    const res = await fetch(`${API_URL}/bets/me/compare`, {
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
 }
 
