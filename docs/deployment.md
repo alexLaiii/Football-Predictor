@@ -164,11 +164,10 @@ A normal day:
 
 ## Monitoring
 
-There is none yet. If production is broken you find out because the page is white or a friend on WhatsApp complains.
+There is none yet. If production is broken you find out because the page is white or a friend on Discord complains.
 
 When this matters more, the obvious additions are:
 - Railway has built-in logs — useful when triaging crashes.
-- A status endpoint already exists at `GET /health`. Wire it into UptimeRobot or similar for a free heartbeat.
 - Errors in the AI predictors are swallowed silently (the `except Exception: pass` in [orchestrator.py](../backend/app/services/ai/orchestrator.py)). For real observability, log them with the fixture ID so you can correlate against the prediction table.
 
 ## Common deploy failures
